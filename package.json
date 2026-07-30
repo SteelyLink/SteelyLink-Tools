@@ -1,0 +1,53 @@
+{
+  "name": "artink-tools",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "prebuild": "node scripts/generate-static.mjs && node scripts/generate-og-image.mjs",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "pages:build": "npm run prebuild && next build",
+    "pages:preview": "npx wrangler pages dev out"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
+    "@jitsi/rnnoise-wasm": "^0.2.1",
+    "@jsquash/avif": "^2.1.1",
+    "@jsquash/jpeg": "^1.6.0",
+    "@jsquash/oxipng": "^2.3.0",
+    "@jsquash/png": "^3.1.1",
+    "@jsquash/webp": "^1.5.0",
+    "@types/leaflet": "^1.9.21",
+    "docx": "^9.6.1",
+    "gifenc": "^1.0.3",
+    "heic2any": "^0.0.4",
+    "jsqr": "^1.4.0",
+    "lamejs": "^1.2.1",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^0.468.0",
+    "mammoth": "^1.12.0",
+    "material-symbols": "^0.44.5",
+    "next": "^15.1.0",
+    "next-intl": "^3.26.0",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^5.6.205",
+    "qrcode": "^1.5.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tesseract.js": "^5.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "autoprefixer": "^10.0.1",
+    "eslint": "^9",
+    "eslint-config-next": "^15.1.0",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}

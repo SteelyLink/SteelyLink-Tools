@@ -1,0 +1,33 @@
+{
+  "name": "SteelyLink Tools",
+  "short_name": "SteelyLink Tools",
+  "description": "Fast, free, privacy-first browser tools. 110 tools for image, PDF, dev, calculator, gaming, audio, and more. No login required.",
+  "start_url": "/en",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#6366f1",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "32x32",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": [
+    "utilities",
+    "productivity"
+  ]
+}

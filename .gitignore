@@ -1,0 +1,25 @@
+# dependencies
+node_modules/
+
+# next.js build
+.next/
+out/
+
+# env
+.env
+.env.local
+.env.production.local
+
+# debug
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# claude code
+.claude/

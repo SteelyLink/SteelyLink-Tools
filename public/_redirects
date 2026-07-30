@@ -1,0 +1,2 @@
+# Fallback redirect: root → English (Cloudflare Function handles IP-based detection)
+/ /en 302
