@@ -62,11 +62,6 @@ var locale=L[tz];
 if(!locale&&tz.indexOf('America/Argentina/')===0)locale='es';
 if(!locale)return;
 document.cookie='tz-locale='+locale+';path=/;max-age=31536000;SameSite=Lax';
-var S=['en','zh-cn','zh-tw','zh-hk','es','ja'];
-var p=location.pathname,cur='';
-for(var i=0;i<S.length;i++){if(p==='/'+S[i]||p.indexOf('/'+S[i]+'/')===0){cur=S[i];break}}
-if(cur===locale)return;
-location.replace(cur?p.replace('/'+cur,'/'+locale):'/'+locale+p);
 }catch(e){}})()`;
 
 export default function RootLayout({
