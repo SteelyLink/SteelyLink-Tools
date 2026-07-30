@@ -5,6 +5,7 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://tools.steelylink.com'),
   title: 'SteelyLink Tools',
   description: 'Fast, free, and private browser-based tools. No login, no upload required.',
   openGraph: {
