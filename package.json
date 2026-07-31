@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "icons:build": "node scripts/build-icon-font.mjs",
     "pages:build": "npm run prebuild && next build",
     "pages:preview": "npx wrangler pages dev out"
   },
