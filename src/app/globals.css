@@ -1,9 +1,19 @@
+/*
+ * Self-hosted subset — Google Fonts is unreachable from mainland China.
+ * Regenerate with `npm run icons:build` after adding icons.
+ *
+ * `font-display: block` is deliberate, not a leftover. Material Symbols resolves
+ * glyphs through ligatures, so during a swap period the fallback font paints the
+ * ligature's literal text — "music_note", "compare_arrows" — instead of the icon.
+ * Blocking hides the glyph box briefly instead of flashing words. Safe here only
+ * because the file is 25 KB and preloaded from our own origin.
+ */
 @font-face {
   font-family: 'Material Symbols Outlined';
   font-style: normal;
-  font-weight: 100 700;
-  font-display: swap;
-  src: url('/fonts/material-symbols-outlined.ttf') format('truetype');
+  font-weight: 400;
+  font-display: block;
+  src: url('/fonts/material-symbols-outlined.woff2') format('woff2');
 }
 
 .material-symbols-outlined {
@@ -18,6 +28,8 @@
   white-space: nowrap;
   word-wrap: normal;
   direction: ltr;
+  font-feature-settings: 'liga';
+  -webkit-font-feature-settings: 'liga';
   -webkit-font-smoothing: antialiased;
 }
 

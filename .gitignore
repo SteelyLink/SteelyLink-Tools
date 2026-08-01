@@ -23,3 +23,7 @@ Thumbs.db
 
 # claude code
 .claude/
+
+# copied out of node_modules by scripts/copy-vendor.mjs on every build
+public/pdfjs/
+public/vendor/

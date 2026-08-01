@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { OG_IMAGES, TWITTER_IMAGES } from '@/lib/utils/seo';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
@@ -11,13 +12,13 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'SteelyLink Tools',
     description: 'Fast, free, and private browser-based tools. No login, no upload required.',
-    images: [{ url: '/og-image.svg', width: 1200, height: 630, alt: 'SteelyLink Tools — Free Browser Tools' }],
+    images: OG_IMAGES,
   },
   twitter: {
     card: 'summary_large_image',
     title: 'SteelyLink Tools',
     description: 'Fast, free, and private browser-based tools. No login, no upload required.',
-    images: ['/og-image.svg'],
+    images: TWITTER_IMAGES,
   },
   icons: {
     icon: [
@@ -73,6 +74,19 @@ export default function RootLayout({
     <html suppressHydrationWarning className={inter.className}>
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
+        {/*
+          The icon font uses `font-display: block`, so first paint of every icon waits
+          on it. Preloading starts the download with the HTML instead of after the CSS
+          has been fetched and parsed, which removes a full round trip — the difference
+          is visible on high-latency connections.
+        */}
+        <link
+          rel="preload"
+          href="/fonts/material-symbols-outlined.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
         <script dangerouslySetInnerHTML={{ __html: TZ_LOCALE_SCRIPT }} />
       </head>
       <body className="min-h-screen flex flex-col" suppressHydrationWarning>

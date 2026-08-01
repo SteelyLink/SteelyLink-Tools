@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
+import { pickMessages, SHELL_NAMESPACES } from '@/i18n/clientMessages';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { GlobalEffects } from '@/components/layout/GlobalEffects';
@@ -40,7 +41,10 @@ export default async function LocaleLayout({ children, params }: Props) {
 
   setRequestLocale(locale);
 
-  const messages = await getMessages();
+  // Only the shell's client components (MobileMenu, AboutDropdown) read messages here.
+  // Pages that need more — currently just tool pages — nest their own provider, so the
+  // 600 KB bundle is never serialized into pages that don't use it. See clientMessages.ts.
+  const messages = pickMessages(await getMessages(), SHELL_NAMESPACES);
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>

@@ -1,0 +1,12 @@
+[
+  { "label": "Roboto",           "css": "Roboto",           "weights": [400, 700] },
+  { "label": "Open Sans",        "css": "Open Sans",        "weights": [400, 700] },
+  { "label": "Lato",             "css": "Lato",             "weights": [400, 700] },
+  { "label": "Montserrat",       "css": "Montserrat",       "weights": [400, 700] },
+  { "label": "Oswald",           "css": "Oswald",           "weights": [400, 700] },
+  { "label": "Raleway",          "css": "Raleway",          "weights": [400, 700] },
+  { "label": "Playfair Display", "css": "Playfair Display", "weights": [400, 700] },
+  { "label": "Dancing Script",   "css": "Dancing Script",   "weights": [400, 700] },
+  { "label": "Pacifico",         "css": "Pacifico",         "weights": [400] },
+  { "label": "Bebas Neue",       "css": "Bebas Neue",       "weights": [400] }
+]

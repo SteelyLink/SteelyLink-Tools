@@ -5,6 +5,25 @@ import type { FAQItem } from '@/components/tool-page/FAQAccordion';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tools.steelylink.com';
 const SITE_NAME = 'SteelyLink Tools';
 
+/**
+ * Next.js replaces the whole `openGraph` / `twitter` object when a page defines one —
+ * it does not merge field-by-field with the root layout. So every builder below has
+ * to carry the image itself; omitting it leaves the page with no og:image at all, and
+ * consumers fall back to a favicon on a white card.
+ *
+ * PNG, not SVG: iOS Link Presentation, Twitter, Facebook and Slack all ignore SVG.
+ */
+const OG_IMAGE = {
+  url: '/og-image.png',
+  width: 1200,
+  height: 630,
+  type: 'image/png',
+  alt: `${SITE_NAME} — free browser-based tools`,
+} as const;
+
+export const OG_IMAGES = [OG_IMAGE];
+export const TWITTER_IMAGES = [OG_IMAGE.url];
+
 export function generateToolMeta(
   tool: ToolDefinition,
   locale: string,
@@ -44,11 +63,13 @@ export function generateToolMeta(
       siteName: SITE_NAME,
       locale: ogLocaleMap[locale] ?? 'en_US',
       type: 'website',
+      images: OG_IMAGES,
     },
     twitter: {
       card: 'summary_large_image',
       title: ogTitle,
       description,
+      images: TWITTER_IMAGES,
     },
     robots: {
       index: true,
@@ -87,11 +108,13 @@ export function generateHomeMetadata(locale: string, title: string, description:
       url: homeUrl,
       siteName: SITE_NAME,
       type: 'website',
+      images: OG_IMAGES,
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
+      images: TWITTER_IMAGES,
     },
   };
 }
@@ -183,11 +206,13 @@ export function generateBlogMeta(
       url,
       siteName: SITE_NAME,
       type: 'article',
+      images: OG_IMAGES,
     },
     twitter: {
       card: 'summary_large_image',
       title: `${title} | ${SITE_NAME}`,
       description,
+      images: TWITTER_IMAGES,
     },
     robots: {
       index: true,
@@ -212,8 +237,8 @@ export function generateBlogIndexMeta(locale: string, title: string, description
     title,
     description,
     alternates: { canonical: url, languages: alternates },
-    openGraph: { title, description, url, siteName: SITE_NAME, type: 'website' },
-    twitter: { card: 'summary_large_image', title, description },
+    openGraph: { title, description, url, siteName: SITE_NAME, type: 'website', images: OG_IMAGES },
+    twitter: { card: 'summary_large_image', title, description, images: TWITTER_IMAGES },
     robots: { index: true, follow: true },
   };
 }
@@ -265,11 +290,13 @@ export function generateCategoryMeta(
       url,
       siteName: SITE_NAME,
       type: 'website',
+      images: OG_IMAGES,
     },
     twitter: {
       card: 'summary_large_image',
       title: `${categoryLabel} | ${SITE_NAME}`,
       description: categoryDesc,
+      images: TWITTER_IMAGES,
     },
     robots: { index: true, follow: true },
   };

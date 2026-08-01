@@ -1,3 +1,14 @@
+/**
+ * Locale redirect for `/` only.
+ *
+ * This deliberately lives at `functions/index.ts` rather than `functions/_middleware.ts`:
+ * a middleware file matches *every* request under its directory, so even though the old
+ * version only acted on `/` and called `context.next()` for everything else, every HTML
+ * page, JS chunk, font and image was still routed through a Worker invocation before
+ * reaching the CDN. A file-based route matches the single path `/`, so all other requests
+ * are served straight off Cloudflare's edge cache.
+ */
+
 const SUPPORTED_LOCALES = ['en', 'zh-cn', 'zh-tw', 'zh-hk', 'es', 'ja'];
 
 const SPANISH_COUNTRIES = new Set([
@@ -45,13 +56,16 @@ function detectLocale(request: Request): string {
 
 export const onRequest: PagesFunction = async (context) => {
   const url = new URL(context.request.url);
-  const { pathname } = url;
+  const locale = detectLocale(context.request);
 
-  // Only intercept root path — let everything else pass through to static files
-  if (pathname === '/') {
-    const locale = detectLocale(context.request);
-    return Response.redirect(new URL(`/${locale}`, url.origin).toString(), 302);
-  }
-
-  return context.next();
+  // 302, not 301: the target depends on the visitor's country and cookies, so it must
+  // never be remembered by a browser or shared cache as the answer for everyone.
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: new URL(`/${locale}`, url.origin).toString(),
+      'Cache-Control': 'private, no-store',
+      Vary: 'Cookie, Accept-Language',
+    },
+  });
 };

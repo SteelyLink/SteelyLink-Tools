@@ -155,10 +155,18 @@ export async function watermarkPDF(file: File, opts: WatermarkOptions): Promise<
   return new Blob([saved.buffer as ArrayBuffer], { type: 'application/pdf' });
 }
 
+// pdfjs-dist is itself a webpack bundle; importing it through webpack breaks it with
+// "Object.defineProperty called on non-object". Loading the copy in /public via
+// `new Function` bypasses webpack, which is the same approach PDFToolCore uses.
+// eslint-disable-next-line no-new-func, @typescript-eslint/no-explicit-any
+const _dynamicImport = new Function('u', 'return import(u)') as (u: string) => Promise<any>;
+
 export async function extractTextFromPDF(bytes: ArrayBuffer): Promise<string> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const pdfjsLib: typeof import('pdfjs-dist') = await import(/* webpackIgnore: true */ 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.6.205/build/pdf.min.mjs' as any);
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+  // Self-hosted, not jsdelivr: a third-party CDN turns every PDF text extraction into a
+  // cross-origin round trip for 490 KB, and it is slow or unreachable behind the Great
+  // Firewall — which looked exactly like the tool hanging with no feedback.
+  const pdfjsLib: typeof import('pdfjs-dist') = await _dynamicImport('/pdfjs/pdf.min.mjs');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
 
   const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(bytes) }).promise;
   const pageTexts: string[] = [];

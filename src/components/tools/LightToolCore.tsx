@@ -33,7 +33,9 @@ function MapEmbed({ lat, lng, zoom = 13, className }: { lat: number; lng: number
       const link = document.createElement('link');
       link.id = 'leaflet-css';
       link.rel = 'stylesheet';
-      link.href = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css';
+      // Self-hosted by scripts/copy-vendor.mjs — a third-party CDN is an extra DNS +
+      // TLS handshake before the map can paint, and unreliable from mainland China.
+      link.href = '/vendor/leaflet/leaflet.css';
       document.head.appendChild(link);
     }
 

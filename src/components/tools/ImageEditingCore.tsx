@@ -3,6 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect, useReducer } from 'react';
 import { useTranslations } from 'next-intl';
 import { ImageTabBar } from './ImageTabBar';
+import WATERMARK_FONTS from '@/lib/fonts/watermark-fonts.json';
 import type { CompressFormat } from '@/types/tools';
 
 export type ImageEditMode = 'remove-bg' | 'add-watermark' | 'drawing-canvas' | 'image-batch';
@@ -321,20 +322,27 @@ function RemoveBgMode() {
 
 const WM_POSITIONS = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center'] as const;
 
-const WATERMARK_FONTS = [
-  { label: 'Roboto',           css: 'Roboto' },
-  { label: 'Open Sans',        css: 'Open Sans' },
-  { label: 'Lato',             css: 'Lato' },
-  { label: 'Montserrat',       css: 'Montserrat' },
-  { label: 'Oswald',           css: 'Oswald' },
-  { label: 'Raleway',          css: 'Raleway' },
-  { label: 'Playfair Display', css: 'Playfair Display' },
-  { label: 'Dancing Script',   css: 'Dancing Script' },
-  { label: 'Pacifico',         css: 'Pacifico' },
-  { label: 'Bebas Neue',       css: 'Bebas Neue' },
-];
+/**
+ * Self-hosted, generated from the same JSON by `npm run fonts:build`.
+ *
+ * This used to be a fonts.googleapis.com stylesheet, which made the tool look frozen on
+ * open from mainland China: the draw path awaits `document.fonts.load(...)`, and a blocked
+ * connection doesn't fail — it hangs until the socket times out. The @font-face rules in
+ * this file are still lazy, so only the family the user picks is ever downloaded.
+ */
+const WATERMARK_FONT_CSS = '/fonts/watermark.css';
 
-const GF_URL = 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Lato:wght@400;700&family=Montserrat:wght@400;700&family=Oswald:wght@400;700&family=Raleway:wght@400;700&family=Playfair+Display:wght@400;700&family=Dancing+Script:wght@400;700&family=Pacifico&family=Bebas+Neue&display=swap';
+/** Injects the stylesheet once per mount and removes it on unmount. */
+function useWatermarkFonts(active = true) {
+  useEffect(() => {
+    if (!active) return;
+    const el = document.createElement('link');
+    el.rel = 'stylesheet';
+    el.href = WATERMARK_FONT_CSS;
+    document.head.appendChild(el);
+    return () => { el.remove(); };
+  }, [active]);
+}
 
 function WatermarkMode() {
   const t = useTranslations('Tool');
@@ -363,14 +371,7 @@ function WatermarkMode() {
   const wmImgElRef       = useRef<HTMLImageElement | null>(null);
   const wmFileInputRef   = useRef<HTMLInputElement>(null);
 
-  // Load all Google Fonts once
-  useEffect(() => {
-    const el = document.createElement('link');
-    el.rel = 'stylesheet';
-    el.href = GF_URL;
-    document.head.appendChild(el);
-    return () => { document.head.removeChild(el); };
-  }, []);
+  useWatermarkFonts();
 
   // Live canvas draw whenever any setting or image changes
   useEffect(() => {
@@ -1349,14 +1350,7 @@ function ImageBatchMode() {
     wmImgRef.current = null;
   }, [op, previewFile]);
 
-  // Load Google Fonts when watermark op is active
-  useEffect(() => {
-    if (op !== 'watermark') return;
-    const el = document.createElement('link');
-    el.rel = 'stylesheet'; el.href = GF_URL;
-    document.head.appendChild(el);
-    return () => { document.head.removeChild(el); };
-  }, [op]);
+  useWatermarkFonts(op === 'watermark');
 
   // Cleanup preview URLs on unmount
   useEffect(() => {

@@ -5,11 +5,50 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
 
+# Every filename under /_next/static/ contains a content hash, so the bytes behind a
+# given URL can never change. Without this rule Cloudflare Pages serves the JS and CSS
+# with max-age=0 and each navigation pays a revalidation round trip per chunk — cheap on
+# a direct connection, the dominant cost through a high-latency VPN hop.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The icon font's name is stable, so it can't be immutable — adding an icon rewrites the
+# same URL. 30 days plus stale-while-revalidate means it's served from cache instantly and
+# refreshed in the background, so a new icon appears on the visit after a deploy.
+/fonts/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=31536000
+
+/*.woff2
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=31536000
+
+# Icons and the social card. Same reasoning as fonts: fixed names, so revalidate lazily.
+/favicon.*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=31536000
+
+/apple-touch-icon.png
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=31536000
+
+/og-image.png
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=31536000
+
+/icons/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=31536000
+
+# Tool and blog pages, and the `.txt` RSC payloads that sit alongside them and are
+# refetched on every client-side navigation.
 /:locale/tools/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
 /:locale/blog/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+# Locale home pages. Short browser TTL because this is the most-linked entry point, long
+# stale window so the edge answers immediately.
+/:locale
+  Cache-Control: public, max-age=3600, stale-while-revalidate=604800
+
+/:locale.txt
+  Cache-Control: public, max-age=3600, stale-while-revalidate=604800
 
 /feed.xml
   Cache-Control: public, max-age=3600, stale-while-revalidate=86400

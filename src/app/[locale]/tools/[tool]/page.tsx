@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
-import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { toolRegistry } from '@/lib/tools/registry';
 import { routing } from '@/i18n/routing';
+import { pickToolMessages } from '@/i18n/clientMessages';
 import { generateToolMeta, generateStructuredData, generateBreadcrumbSchema, generateHowToSchema } from '@/lib/utils/seo';
 import { ToolPageWrapper } from '@/components/tool-page/ToolPageWrapper';
 import type { ToolMode } from '@/types/tools';
@@ -73,12 +75,20 @@ export default async function ToolPage({ params }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }} />
-      <ToolPageWrapper
-        tool={toolData}
-        locale={locale}
-        toolName={toolName}
-        toolDescription={toolDescription}
-      />
+      {/*
+        The locale layout only provides the `Nav` namespace, so tool pages supply the
+        namespaces their own client components read (HowToUse, RelatedTools, the tool
+        cores) — scoped to this tool. Doing it here rather than in the layout keeps the
+        other ~600 KB of messages out of every non-tool page's HTML and RSC payload.
+      */}
+      <NextIntlClientProvider locale={locale} messages={pickToolMessages(await getMessages(), tool)}>
+        <ToolPageWrapper
+          tool={toolData}
+          locale={locale}
+          toolName={toolName}
+          toolDescription={toolDescription}
+        />
+      </NextIntlClientProvider>
     </>
   );
 }
