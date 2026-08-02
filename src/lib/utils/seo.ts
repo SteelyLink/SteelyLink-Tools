@@ -12,17 +12,30 @@ const SITE_NAME = 'SteelyLink Tools';
  * consumers fall back to a favicon on a white card.
  *
  * PNG, not SVG: iOS Link Presentation, Twitter, Facebook and Slack all ignore SVG.
+ *
+ * Two images, because the consumers want different things:
+ *
+ *   og:image is square. iOS Link Presentation — the Safari share sheet and iMessage —
+ *   draws it into a small rounded square with an aspect-fill crop, and WeChat does the
+ *   same. Feeding those a 1200x630 card means they centre-crop it and show an
+ *   unreadable slice of the headline, which is what the share sheet was doing. A square
+ *   brand tile fills that thumbnail edge to edge with the logo and nothing else.
+ *
+ *   twitter:image stays the wide 1200x630 card, so `summary_large_image` still renders
+ *   the full banner on Twitter/X.
  */
 const OG_IMAGE = {
-  url: '/og-image.png',
+  url: '/og-icon.png',
   width: 1200,
-  height: 630,
+  height: 1200,
   type: 'image/png',
-  alt: `${SITE_NAME} — free browser-based tools`,
+  alt: `${SITE_NAME}`,
 } as const;
 
+const TWITTER_CARD_IMAGE = '/og-image.png';
+
 export const OG_IMAGES = [OG_IMAGE];
-export const TWITTER_IMAGES = [OG_IMAGE.url];
+export const TWITTER_IMAGES = [TWITTER_CARD_IMAGE];
 
 export function generateToolMeta(
   tool: ToolDefinition,

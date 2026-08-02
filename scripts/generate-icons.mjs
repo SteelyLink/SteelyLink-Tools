@@ -73,6 +73,8 @@ const outputs = [
   ['apple-touch-icon.png', png(180)],
   ['icon-192.png', png(192)],
   ['icon-512.png', png(512)],
+  // og:image. Square on purpose — see the note in src/lib/utils/seo.ts.
+  ['og-icon.png', png(1200)],
 ];
 
 for (const [name, data] of outputs) {

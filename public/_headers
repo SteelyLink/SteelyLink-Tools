@@ -36,6 +36,9 @@
 /og-image.png
   Cache-Control: public, max-age=2592000, stale-while-revalidate=31536000
 
+/og-icon.png
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=31536000
+
 /icons/*
   Cache-Control: public, max-age=2592000, stale-while-revalidate=31536000
 
