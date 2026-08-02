@@ -4,7 +4,7 @@
  * Transparent glyph, for the browser tab:
  *   public/favicon.svg          vector, preferred by browsers that support it
  *   public/favicon.png          64x64
- *   public/favicon.ico          32x32 + 16x16
+ *   public/favicon.ico          16x16 + 32x32 + 48x48
  *
  * Opaque tile, for anywhere the icon is drawn onto someone else's surface:
  *   public/apple-touch-icon.png 180x180  iOS home screen
@@ -71,9 +71,12 @@ function ico(images) {
 }
 
 const outputs = [
-  ['favicon.svg', Buffer.from(glyph, 'utf8')],
+  ['favicon.svg', Buffer.from(glyph + '\n', 'utf8')],
   ['favicon.png', glyphPng(64)],
-  ['favicon.ico', ico([32, 16].map((size) => ({ size, data: glyphPng(size) })))],
+  // 16/32/48, ascending, as the original shipped. Browsers pick by size rather than by
+  // order, but iOS Safari is the fussiest consumer of this file and this is the layout
+  // it has been observed to render, so there's no reason to deviate.
+  ['favicon.ico', ico([16, 32, 48].map((size) => ({ size, data: glyphPng(size) })))],
   ['apple-touch-icon.png', png(180)],
   ['icon-192.png', png(192)],
   ['icon-512.png', png(512)],

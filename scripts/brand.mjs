@@ -14,15 +14,14 @@
  *   The GLYPH — favicon.svg, favicon.png, favicon.ico. A browser tab is the one place
  *   a transparent icon is right: it sits on the tab strip, adopts the user's light or
  *   dark chrome, and needs no card behind it. It's also tiny, so it's drawn full bleed
- *   — the tile's 22-unit padding is a third of a 16px favicon and throws away the
- *   detail that makes the mark legible at that size.
+ *   and with its own proportions — see glyphSvg for why it isn't a crop of the tile.
  *
  * Making the favicons tiles was a fix for the share card, back when iOS was falling
  * back to a favicon. It doesn't any more: og:image is a square tile of its own, and
  * Link Presentation reads og:image before it looks at any icon. So the tab keeps the
  * glyph and the share card keeps the tile.
  *
- * Geometry is authored on a 180-unit grid, matching the 180x180 apple-touch icon.
+ * Tile geometry is authored on a 180-unit grid, matching the 180x180 apple-touch icon.
  */
 
 /**
@@ -34,7 +33,7 @@
  *
  * Bump on any change to the mark, and keep it in step with src/app/layout.tsx.
  */
-export const ICON_VERSION = 3;
+export const ICON_VERSION = 4;
 
 /** Diagonal tile gradient, sampled from the original apple-touch-icon. */
 export const GRADIENT = [
@@ -111,21 +110,28 @@ ${markShapes()}
 }
 
 /**
- * The mark alone, on transparency, cropped to itself.
+ * The mark alone, on transparency, for the browser tab.
  *
- * Same shapes as the tile — the viewBox just clips the tile's padding away instead of
- * the geometry being authored twice, so the two can't drift. `BLEED` leaves a hair of
- * margin so the outermost corners aren't clipped by a viewport rounding error.
+ * This is its own drawing rather than a crop of the tile, and that's deliberate — the
+ * two are not the same rendition and shouldn't be made into one:
+ *
+ *   - The gutter is 21% of a cell here against the tile's 16%, and the corners are
+ *     sharp rather than rounded. At 16px an 8-unit radius is a blurred edge and a
+ *     10-unit gutter closes up into a single indigo block; this version stays four
+ *     legible shapes.
+ *   - The rotated square is 71% of a cell rather than 49%, and it breaks past the block
+ *     into the top-right, which is what keeps the mark from reading as a plain grid at
+ *     tab size.
+ *
+ * The path is the artwork the site originally shipped, kept byte-for-byte. The viewBox
+ * origin is 0 0 on purpose: Safari renders an offset origin unreliably in a favicon,
+ * and a tab icon that silently fails to draw on iOS is not worth the tidier geometry.
  *
  * @param {object} [opts]
- * @param {number} [opts.size]   pixel width/height written to the root element
  * @param {string} [opts.fill]   glyph colour
  */
-export function glyphSvg({ size = GRID, fill = GLYPH_COLOR } = {}) {
-  const BLEED = 4;
-  const min = PAD - BLEED;
-  const span = GRID - 2 * min;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="${min} ${min} ${span} ${span}">
-${markShapes(fill)}
+export function glyphSvg({ fill = GLYPH_COLOR } = {}) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 960">
+  <path transform="translate(0,960)" d="M677-409 409-677l268-267 267 267-267 268ZM31-489v-379h378v379H31ZM489-31v-378h379v378H489ZM31-31v-378h378v378H31Z" fill="${fill}"/>
 </svg>`;
 }

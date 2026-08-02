@@ -29,12 +29,12 @@ export const metadata: Metadata = {
   // Keep the number in step with ICON_VERSION in scripts/brand.mjs.
   icons: {
     icon: [
-      { url: '/favicon.ico?v=3', sizes: '32x32', type: 'image/x-icon' },
-      { url: '/favicon.png?v=3', sizes: '64x64', type: 'image/png' },
-      { url: '/favicon.svg?v=3', type: 'image/svg+xml' },
+      { url: '/favicon.ico?v=4', sizes: '32x32', type: 'image/x-icon' },
+      { url: '/favicon.png?v=4', sizes: '64x64', type: 'image/png' },
+      { url: '/favicon.svg?v=4', type: 'image/svg+xml' },
     ],
     apple: [
-      { url: '/apple-touch-icon.png?v=3', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-touch-icon.png?v=4', sizes: '180x180', type: 'image/png' },
     ],
   },
   appleWebApp: {
