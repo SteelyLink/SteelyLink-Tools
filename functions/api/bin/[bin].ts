@@ -1,32 +1,45 @@
 /**
  * BIN lookup.
  *
- * Why bank and country came back unknown at random:
+ * Three upstreams, and the whole design is about the fact that the accurate one is the
+ * one that rations us. Measured against the live endpoints:
  *
- * binlist.net and handyapi both meter their free tier **per source IP**, and every
- * visitor to this site shares one Cloudflare egress address per colo. Measured against
- * the live endpoints: binlist starts returning 429 on the third request in a burst,
- * handyapi answers HTTP 200 with `{"Status":"RATE LIMIT EXCEEDED"}` from the seventh.
- * So a colo's quota is spent within seconds of any traffic, and from then on every
- * lookup there falls back to whatever scraps remain — while a visitor arriving through
- * a VPN lands on a different colo with a fresh quota and sees a complete result. Same
- * BIN, same code, different answer, which is exactly the "sometimes unknown" report.
+ *   handyapi   — accurate, and the only source that gets Chinese issuers right. Meters
+ *                per source IP: anonymously it serves about two requests before it
+ *                answers HTTP 200 with `{"Status":"RATE LIMIT EXCEEDED"}`. The bucket
+ *                refills within a second, so it's a burst limit, not a daily cap.
+ *   binlist    — mixed. Returns `{"number":null,"country":{},"bank":{}}` for most
+ *                UnionPay ranges, and 429s from the third request in a burst.
+ *   antipublic — never meters us (15/15 in a burst), but it is the least trustworthy.
+ *                For BINs it doesn't hold it returns a stub — `"bank":"NETWORK ONLY"`
+ *                with the country defaulted to US — rather than a miss. BIN 621793 is
+ *                Shanghai Pudong Development Bank; antipublic calls it a US network-only
+ *                card, handyapi names it correctly.
  *
- * The old code made that worse by returning binlist's answer whenever *any* field came
- * back — BIN 601100 answers with `"bank": {}` — and then caching that partial for a day.
+ * Every visitor shares one Cloudflare egress address per colo, so a colo's handyapi
+ * burst quota is spent seconds after any traffic. That is the intermittent "unknown":
+ * same BIN, same code, different answer depending on which colo you land on — and why
+ * a VPN appeared to fix it. It moved the request to a colo with an unspent bucket.
  *
- * So the order here is deliberate:
+ * So:
  *
- *   1. Ask antipublic first. It is the only keyless source that doesn't meter us
- *      (15/15 in a burst) and the only one with usable UnionPay coverage, which matters
- *      because most visitors here are looking up Chinese cards.
- *   2. Only if that leaves a hole, spend a request on binlist and handyapi and merge
- *      what they add. Most lookups never reach this, which is what keeps the quota
- *      available for the lookups that do.
- *   3. Cache. Complete results sit in the colo's cache for a week, so a BIN is paid for
- *      once. Partial results are cached briefly too — not to serve stale data, but so a
- *      BIN nobody can resolve stops burning the quota on every page view.
+ *   1. Ask handyapi alone. It answers most lookups correctly, in one round trip.
+ *   2. If it was rationed or came up short, fan out: binlist, antipublic, and a second
+ *      handyapi attempt, all at once. The retry is free in wall-clock terms because it
+ *      runs alongside the fallbacks, and the bucket has usually refilled by then.
+ *   3. Merge by trust, not by whoever answered: handyapi, then binlist, then antipublic.
+ *      antipublic's stub rows are dropped outright — a wrong bank and country is worse
+ *      than a blank one.
+ *   4. Cache at the edge. Complete results sit in the colo's cache for a week, so a BIN
+ *      is paid for once and the quota goes to BINs nobody has looked up yet. Partial
+ *      results are cached briefly, so an unresolvable BIN stops burning the quota on
+ *      every page view without being stuck that way.
+ *
+ * Set HANDY_API_KEY in the Pages project to remove the rationing entirely; without it
+ * the fallbacks carry whatever the burst limit drops.
  */
+
+type Env = { HANDY_API_KEY?: string };
 
 type Bank = { name?: string; url?: string; phone?: string; city?: string };
 type Country = { name?: string; alpha2?: string; emoji?: string; currency?: string };
@@ -94,8 +107,15 @@ const SCHEME_ALIASES: Record<string, string> = {
   'diners club international': 'diners club',
 };
 
-const normalizeScheme = (scheme: string | undefined | null) =>
-  scheme ? (SCHEME_ALIASES[scheme] ?? scheme) : null;
+function normalizeScheme(scheme: string | undefined | null, bin: string): string | null {
+  if (!scheme) return null;
+  const name = SCHEME_ALIASES[scheme] ?? scheme;
+  // Discover and UnionPay share the 622126-622925 acquiring range, and binlist reports
+  // the whole of it as Discover. The issuer is still UnionPay — ISO 7812 assigns the
+  // entire 62 IIN to it — and "Discover" on a China Merchants Bank card is just wrong.
+  if (name === 'discover' && (bin.startsWith('62') || bin.startsWith('81'))) return 'unionpay';
+  return name;
+}
 
 /**
  * Card network implied by the number itself. ISO/IEC 7812 issuer ranges are fixed, so
@@ -130,12 +150,30 @@ async function getJson(url: string, headers: Record<string, string> = {}): Promi
   }
 }
 
-const fromAntipublic = (bin: string) => getJson(`https://bins.antipublic.cc/bins/${bin}`);
+/**
+ * antipublic answers for BINs it doesn't actually hold with a stub row rather than a
+ * miss: a placeholder issuer and the country defaulted to US. Taking that at face value
+ * is how BIN 621793 — Shanghai Pudong Development Bank — came back as a US card. The
+ * network and card type on those rows are still right, so only the issuer and the
+ * country are thrown away.
+ */
+const PLACEHOLDER_BANKS = new Set(['network only', 'unknown', 'not available']);
+
+function sanitizeAntipublic(ap: any) {
+  if (!ap || ap.error) return null;
+  if (!PLACEHOLDER_BANKS.has(clean(ap.bank)?.toLowerCase() ?? '')) return ap;
+  const { bank, country, country_name, country_flag, country_currencies, ...rest } = ap;
+  return rest;
+}
+
+const fromAntipublic = (bin: string) =>
+  getJson(`https://bins.antipublic.cc/bins/${bin}`).then(sanitizeAntipublic);
 
 const fromBinlist = (bin: string) =>
   getJson(`https://lookup.binlist.net/${bin}`, { 'Accept-Version': '3' });
 
-const fromHandyApi = (bin: string) => getJson(`https://data.handyapi.com/bin/${bin}`);
+const fromHandyApi = (bin: string, key?: string) =>
+  getJson(`https://data.handyapi.com/bin/${bin}`, key ? { 'x-api-key': key } : {});
 
 /** handyapi signals its quota in the body, with a 200 status. */
 const handyOk = (ha: any) => (ha && (ha.Status === 'SUCCESS' || ha.Scheme) ? ha : null);
@@ -144,7 +182,7 @@ function merge(bin: string, ap: any, bl: any, rawHa: any): BinInfo {
   const ha = handyOk(rawHa);
 
   const bank: Bank = {};
-  const bankName = titleCase(firstOf(bl?.bank?.name, ha?.Issuer, ap?.bank), true);
+  const bankName = titleCase(firstOf(ha?.Issuer, bl?.bank?.name, ap?.bank), true);
   if (bankName) bank.name = bankName;
   const bankUrl = firstOf(bl?.bank?.url);
   if (bankUrl) bank.url = bankUrl;
@@ -192,18 +230,19 @@ function merge(bin: string, ap: any, bl: any, rawHa: any): BinInfo {
   }
 
   const prepaid =
-    typeof bl?.prepaid === 'boolean'
-      ? bl.prepaid
-      : typeof ha?.Prepaid === 'boolean'
-        ? ha.Prepaid
+    typeof ha?.Prepaid === 'boolean'
+      ? ha.Prepaid
+      : typeof bl?.prepaid === 'boolean'
+        ? bl.prepaid
         : null;
 
   return {
     scheme: normalizeScheme(
-      lower(bl?.scheme) ?? lower(ha?.Scheme) ?? lower(ap?.brand) ?? schemeFromPrefix(bin) ?? undefined
+      lower(ha?.Scheme) ?? lower(bl?.scheme) ?? lower(ap?.brand) ?? schemeFromPrefix(bin) ?? undefined,
+      bin
     ),
-    type: lower(bl?.type) ?? lower(ha?.Type) ?? lower(ap?.type) ?? null,
-    brand: titleCase(firstOf(bl?.brand, ha?.CardTier, ap?.level)),
+    type: lower(ha?.Type) ?? lower(bl?.type) ?? lower(ap?.type) ?? null,
+    brand: titleCase(firstOf(ha?.CardTier, bl?.brand, ap?.level)),
     category: titleCase(firstOf(ha?.CardTier, bl?.brand, ap?.level)),
     prepaid,
     bank: bank.name ? bank : null,
@@ -218,7 +257,7 @@ const isComplete = (info: BinInfo) =>
 /** At least one provider recognised the number — as opposed to us guessing the network. */
 const isFound = (info: BinInfo) => Boolean(info.type || info.bank || info.country || info.brand);
 
-export const onRequest: PagesFunction = async (context) => {
+export const onRequest: PagesFunction<Env> = async (context) => {
   const bin = (context.params.bin as string).replace(/\D/g, '').slice(0, 8);
 
   if (bin.length < 6) {
@@ -238,13 +277,23 @@ export const onRequest: PagesFunction = async (context) => {
   const cached = await cache?.match(cacheKey).catch(() => null);
   if (cached) return cached;
 
-  const ap = await fromAntipublic(bin);
-  let info = merge(bin, ap, null, null);
+  const key = context.env.HANDY_API_KEY;
 
-  // Only spend the metered providers on what antipublic couldn't answer — in practice
-  // that's the issuer name, which it often leaves null for UnionPay ranges.
+  // handyapi alone first: it answers most lookups correctly in one round trip, and the
+  // ones it answers completely never touch the other two.
+  let ha = await fromHandyApi(bin, key);
+  let info = merge(bin, null, null, ha);
+
   if (!isComplete(info)) {
-    const [bl, ha] = await Promise.all([fromBinlist(bin), fromHandyApi(bin)]);
+    // Everything at once. The second handyapi attempt costs nothing in wall-clock terms
+    // because it runs beside the fallbacks, and its burst bucket refills in under a
+    // second — so a request rationed a moment ago usually succeeds here.
+    const [bl, ap, retry] = await Promise.all([
+      fromBinlist(bin),
+      fromAntipublic(bin),
+      handyOk(ha) ? Promise.resolve(null) : fromHandyApi(bin, key),
+    ]);
+    ha = handyOk(ha) ?? retry;
     info = merge(bin, ap, bl, ha);
   }
 

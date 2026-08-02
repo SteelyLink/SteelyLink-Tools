@@ -1,18 +1,26 @@
 /**
  * The single definition of the SteelyLink Tools mark.
  *
- * Every icon the site ships — favicon.svg, favicon.png, favicon.ico,
- * apple-touch-icon.png and the lockup on og-image.png — is drawn from here, so the
- * brand can't drift between them. It drifted before: the favicons were a bare purple
- * mark on a *transparent* background while apple-touch-icon.png was a full-bleed
- * gradient tile. iOS composites transparency onto white, so whenever the share sheet
- * picked a favicon over the touch icon it drew a purple glyph inside a white square.
+ * Every icon the site ships is drawn from here, so the brand can't drift between them.
  *
- * Two rules keep that from coming back:
- *   1. The tile is opaque edge to edge — the background is painted, never left blank.
- *   2. The tile has square corners. A rounded corner is a transparent corner, and iOS
- *      renders that as white. Platforms that want a rounded icon (iOS home screen,
- *      Android adaptive icons) apply their own mask.
+ * There are two forms, because the two places an icon lands want opposite things:
+ *
+ *   The TILE — apple-touch-icon, the manifest icons, og:image. These get drawn onto a
+ *   surface the site doesn't control, so the background has to be painted: iOS
+ *   composites transparency onto white, which is where the white square behind the
+ *   share-sheet icon came from. The tile is also square-cornered, because a rounded
+ *   corner is a transparent corner; iOS and Android apply their own mask.
+ *
+ *   The GLYPH — favicon.svg, favicon.png, favicon.ico. A browser tab is the one place
+ *   a transparent icon is right: it sits on the tab strip, adopts the user's light or
+ *   dark chrome, and needs no card behind it. It's also tiny, so it's drawn full bleed
+ *   — the tile's 22-unit padding is a third of a 16px favicon and throws away the
+ *   detail that makes the mark legible at that size.
+ *
+ * Making the favicons tiles was a fix for the share card, back when iOS was falling
+ * back to a favicon. It doesn't any more: og:image is a square tile of its own, and
+ * Link Presentation reads og:image before it looks at any icon. So the tab keeps the
+ * glyph and the share card keeps the tile.
  *
  * Geometry is authored on a 180-unit grid, matching the 180x180 apple-touch icon.
  */
@@ -26,7 +34,7 @@
  *
  * Bump on any change to the mark, and keep it in step with src/app/layout.tsx.
  */
-export const ICON_VERSION = 2;
+export const ICON_VERSION = 3;
 
 /** Diagonal tile gradient, sampled from the original apple-touch-icon. */
 export const GRADIENT = [
@@ -37,6 +45,14 @@ export const GRADIENT = [
 
 /** The mark itself — near-white rather than pure white, again matching the original. */
 export const MARK_COLOR = '#f6f6fd';
+
+/**
+ * The mark when it stands alone on transparency, as it does in a browser tab. Indigo
+ * 500 — one step brighter than the tile gradient, because a tab strip is a light or
+ * mid-grey background rather than the dark surface the site is designed on, and the
+ * darker gradient purples go muddy against it at 16px.
+ */
+export const GLYPH_COLOR = '#6366f1';
 
 /** Canvas the geometry below is authored against. */
 export const GRID = 180;
@@ -91,5 +107,25 @@ ${stops}
   </defs>
   <rect width="${GRID}" height="${GRID}" fill="url(#${id})"/>
 ${markShapes()}
+</svg>`;
+}
+
+/**
+ * The mark alone, on transparency, cropped to itself.
+ *
+ * Same shapes as the tile — the viewBox just clips the tile's padding away instead of
+ * the geometry being authored twice, so the two can't drift. `BLEED` leaves a hair of
+ * margin so the outermost corners aren't clipped by a viewport rounding error.
+ *
+ * @param {object} [opts]
+ * @param {number} [opts.size]   pixel width/height written to the root element
+ * @param {string} [opts.fill]   glyph colour
+ */
+export function glyphSvg({ size = GRID, fill = GLYPH_COLOR } = {}) {
+  const BLEED = 4;
+  const min = PAD - BLEED;
+  const span = GRID - 2 * min;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="${min} ${min} ${span} ${span}">
+${markShapes(fill)}
 </svg>`;
 }

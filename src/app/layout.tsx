@@ -21,21 +21,20 @@ export const metadata: Metadata = {
     images: TWITTER_IMAGES,
   },
   manifest: '/manifest.webmanifest',
-  // Every one of these is the same opaque, square tile (scripts/generate-icons.mjs).
-  // iOS Link Presentation does not always choose the apple entry when it draws the
-  // share card, so a favicon with a transparent background would still get composited
-  // onto white — which is exactly the white frame this set removes.
+  // The favicons are the mark on transparency, so a tab adopts the browser's own light
+  // or dark chrome; the apple entry is the opaque tile, because iOS draws it onto a home
+  // screen and would composite transparency onto white. See scripts/brand.mjs.
   //
   // `?v=` busts the 30-day icon cache for clients still holding the old artwork.
   // Keep the number in step with ICON_VERSION in scripts/brand.mjs.
   icons: {
     icon: [
-      { url: '/favicon.ico?v=2', sizes: '32x32', type: 'image/x-icon' },
-      { url: '/favicon.png?v=2', sizes: '64x64', type: 'image/png' },
-      { url: '/favicon.svg?v=2', type: 'image/svg+xml' },
+      { url: '/favicon.ico?v=3', sizes: '32x32', type: 'image/x-icon' },
+      { url: '/favicon.png?v=3', sizes: '64x64', type: 'image/png' },
+      { url: '/favicon.svg?v=3', type: 'image/svg+xml' },
     ],
     apple: [
-      { url: '/apple-touch-icon.png?v=2', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-touch-icon.png?v=3', sizes: '180x180', type: 'image/png' },
     ],
   },
   appleWebApp: {

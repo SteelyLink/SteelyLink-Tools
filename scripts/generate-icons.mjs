@@ -1,19 +1,18 @@
 /**
  * Renders every brand icon from scripts/brand.mjs.
  *
- * Writes:
- *   public/favicon.svg          vector, used by browsers that prefer it
+ * Transparent glyph, for the browser tab:
+ *   public/favicon.svg          vector, preferred by browsers that support it
  *   public/favicon.png          64x64
  *   public/favicon.ico          32x32 + 16x16
- *   public/apple-touch-icon.png 180x180
- *   public/icon-192.png         192x192, referenced by the web manifest
- *   public/icon-512.png         512x512, referenced by the web manifest
  *
- * All six are the same opaque, square tile. Previously only apple-touch-icon.png was —
- * the favicons were a purple glyph on transparency, and iOS Link Presentation (the
- * Safari share sheet) does not always pick the touch icon. When it fell back to a
- * favicon it composited the transparency onto white, which is the white square the
- * share card kept showing. Making every source full-bleed removes the choice.
+ * Opaque tile, for anywhere the icon is drawn onto someone else's surface:
+ *   public/apple-touch-icon.png 180x180  iOS home screen
+ *   public/icon-192.png         192x192  web manifest
+ *   public/icon-512.png         512x512  web manifest
+ *   public/og-icon.png          1200x1200 og:image
+ *
+ * See scripts/brand.mjs for why the split exists.
  *
  * Output is committed, so deploys never need a rasterizer. Regenerate on a machine
  * with @resvg/resvg-js available:
@@ -22,7 +21,7 @@
 import { writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { tileSvg } from './brand.mjs';
+import { glyphSvg, tileSvg } from './brand.mjs';
 
 const PUBLIC = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
 
@@ -34,9 +33,14 @@ const { Resvg } = await import('@resvg/resvg-js').catch(() => {
   );
 });
 
-const svg = tileSvg();
-const png = (size) =>
+const tile = tileSvg();
+const glyph = glyphSvg();
+
+const render = (svg, size) =>
   Buffer.from(new Resvg(svg, { fitTo: { mode: 'width', value: size } }).render().asPng());
+
+const png = (size) => render(tile, size);
+const glyphPng = (size) => render(glyph, size);
 
 /**
  * Packs PNGs into an ICO container. ICO has carried PNG payloads since Vista and every
@@ -67,9 +71,9 @@ function ico(images) {
 }
 
 const outputs = [
-  ['favicon.svg', Buffer.from(svg, 'utf8')],
-  ['favicon.png', png(64)],
-  ['favicon.ico', ico([32, 16].map((size) => ({ size, data: png(size) })))],
+  ['favicon.svg', Buffer.from(glyph, 'utf8')],
+  ['favicon.png', glyphPng(64)],
+  ['favicon.ico', ico([32, 16].map((size) => ({ size, data: glyphPng(size) })))],
   ['apple-touch-icon.png', png(180)],
   ['icon-192.png', png(192)],
   ['icon-512.png', png(512)],
