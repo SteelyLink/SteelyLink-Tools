@@ -22,10 +22,15 @@
   Cache-Control: public, max-age=2592000, stale-while-revalidate=31536000
 
 # Icons and the social card. Same reasoning as fonts: fixed names, so revalidate lazily.
+# The `?v=` on the links in <head> is what forces an immediate refetch when the artwork
+# changes — see ICON_VERSION in scripts/brand.mjs.
 /favicon.*
   Cache-Control: public, max-age=2592000, stale-while-revalidate=31536000
 
 /apple-touch-icon.png
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=31536000
+
+/icon-*.png
   Cache-Control: public, max-age=2592000, stale-while-revalidate=31536000
 
 /og-image.png

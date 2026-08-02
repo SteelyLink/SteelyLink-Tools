@@ -1,3 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 960">
-  <path transform="translate(0,960)" d="M677-409 409-677l268-267 267 267-267 268ZM31-489v-379h378v379H31ZM489-31v-378h379v378H489ZM31-31v-378h378v378H31Z" fill="#6366f1"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
+  <defs>
+    <linearGradient id="tile" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3730a3"/>
+      <stop offset="50%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#6d28d9"/>
+    </linearGradient>
+  </defs>
+  <rect width="180" height="180" fill="url(#tile)"/>
+  <rect x="22" y="22" width="63" height="63" rx="8" fill="#f6f6fd"/>
+  <rect x="22" y="95" width="63" height="63" rx="8" fill="#f6f6fd"/>
+  <rect x="95" y="95" width="63" height="63" rx="8" fill="#f6f6fd"/>
+  <rect x="-22" y="-22" width="44" height="44" rx="6" fill="#f6f6fd" transform="translate(126.5 53.5) rotate(45)"/>
 </svg>

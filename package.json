@@ -6,12 +6,14 @@
     "dev": "next dev",
     "prebuild": "node scripts/copy-vendor.mjs && node scripts/generate-static.mjs",
     "build": "next build",
+    "postbuild": "node scripts/check-registry-classes.mjs",
     "start": "next start",
     "lint": "next lint",
     "icons:build": "node scripts/build-icon-font.mjs",
     "fonts:build": "node scripts/build-watermark-fonts.mjs",
     "og:build": "node scripts/generate-og-image.mjs",
-    "pages:build": "npm run prebuild && next build",
+    "brand:build": "node scripts/generate-icons.mjs",
+    "pages:build": "npm run build",
     "pages:preview": "npx wrangler pages dev out"
   },
   "dependencies": {

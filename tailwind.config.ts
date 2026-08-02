@@ -5,6 +5,12 @@ const config: Config = {
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+    // The tool registry stores each tool's icon colour as a class string
+    // (`colorClass`, `iconBgClass`). Those files are data, not components, but Tailwind
+    // only emits classes it can see as literal text — without this glob every colour
+    // that isn't also written out in some component gets purged and the icon renders
+    // with no colour at all.
+    './src/lib/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {

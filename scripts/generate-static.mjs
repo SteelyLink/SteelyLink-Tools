@@ -7,6 +7,7 @@
 import { writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { ICON_VERSION } from './brand.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC = join(__dirname, '..', 'public');
@@ -166,10 +167,16 @@ function generateManifest() {
     background_color: '#0f172a',
     theme_color: '#6366f1',
     orientation: 'any',
+    // All produced by scripts/generate-icons.mjs from one source, so they are the same
+    // opaque square tile at different sizes. Nothing here declares `maskable`: the mark
+    // sits 12% in from the edge, which survives a rounded-rect mask but not the circle
+    // Android may apply, and a wrongly-declared maskable icon gets its corners cropped.
     icons: [
-      { src: '/favicon.ico', sizes: '32x32', type: 'image/x-icon' },
-      { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
-      { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png', purpose: 'any' },
+      { src: `/favicon.ico?v=${ICON_VERSION}`, sizes: '32x32', type: 'image/x-icon' },
+      { src: `/favicon.svg?v=${ICON_VERSION}`, sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+      { src: `/apple-touch-icon.png?v=${ICON_VERSION}`, sizes: '180x180', type: 'image/png', purpose: 'any' },
+      { src: `/icon-192.png?v=${ICON_VERSION}`, sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: `/icon-512.png?v=${ICON_VERSION}`, sizes: '512x512', type: 'image/png', purpose: 'any' },
     ],
     categories: ['utilities', 'productivity'],
   };

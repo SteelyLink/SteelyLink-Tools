@@ -15,6 +15,7 @@
 import { writeFileSync, existsSync, rmSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { GRADIENT, GRID, markShapes } from './brand.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC = join(__dirname, '..', 'public');
@@ -22,10 +23,8 @@ const PUBLIC = join(__dirname, '..', 'public');
 const W = 1200;
 const H = 630;
 
-// The favicon mark: three squares and a diamond. Authored on a 960 grid, so it is
-// scaled down rather than redrawn to keep one source of truth for the shape.
-const MARK =
-  'M677-409 409-677l268-267 267 267-267 268ZM31-489v-379h378v379H31ZM489-31v-378h379v378H489ZM31-31v-378h378v378H31Z';
+// Lockup tile, drawn from the same 180-unit mark as the favicons (see brand.mjs).
+const TILE = 72;
 
 // Arial is used explicitly rather than a system-ui stack: this renders through
 // resvg, not a browser, and an unresolvable family silently drops the text.
@@ -34,8 +33,7 @@ const FONT = 'Arial';
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <defs>
     <linearGradient id="brand" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#6366f1"/>
-      <stop offset="100%" stop-color="#8b5cf6"/>
+${GRADIENT.map(([offset, color]) => `      <stop offset="${offset}" stop-color="${color}"/>`).join('\n')}
     </linearGradient>
     <radialGradient id="glow" cx="50%" cy="50%" r="50%">
       <stop offset="0%" stop-color="#6366f1" stop-opacity="0.28"/>
@@ -47,8 +45,10 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" 
   <ellipse cx="1010" cy="120" rx="520" ry="400" fill="url(#glow)"/>
 
   <!-- Brand lockup -->
-  <rect x="72" y="64" width="72" height="72" rx="18" fill="url(#brand)"/>
-  <path transform="translate(90,82) scale(0.0375) translate(0,960)" d="${MARK}" fill="#ffffff"/>
+  <rect x="72" y="64" width="${TILE}" height="${TILE}" rx="18" fill="url(#brand)"/>
+  <g transform="translate(72,64) scale(${TILE / GRID})">
+${markShapes(undefined, '    ')}
+  </g>
   <text x="164" y="110" font-family="${FONT}" font-size="34" font-weight="bold" fill="#e2e8f0">SteelyLink Tools</text>
 
   <!-- Badge -->
