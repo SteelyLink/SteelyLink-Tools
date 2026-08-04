@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 
 interface Props {
@@ -35,14 +34,13 @@ export function MobileMenu({ locale, navLinks, getStartedLabel }: Props) {
       {open && (
         <div className="absolute top-full left-0 right-0 bg-slate-900 border-b border-slate-800 py-4 px-6 space-y-3 animate-fade-in">
           {navLinks.map((link) => (
-            <Link
+            <a
               key={link.href}
               href={link.href}
-              onClick={() => setOpen(false)}
               className="block text-slate-300 hover:text-white py-2 transition-colors"
             >
               {link.label}
-            </Link>
+            </a>
           ))}
           <button
             onClick={() => {

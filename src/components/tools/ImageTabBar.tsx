@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
@@ -46,7 +45,7 @@ export function ImageTabBar({ mode }: { mode: string }) {
           ? converter
           : mode === tab.mode || (tab.extraModes?.includes(mode) ?? false);
         return (
-          <Link
+          <a
             key={tab.mode}
             href={`/${locale}/tools/${tab.mode}`}
             title={tab.label}
@@ -58,7 +57,7 @@ export function ImageTabBar({ mode }: { mode: string }) {
           >
             <span className="material-symbols-outlined text-base">{tab.icon}</span>
             <span className="text-[9px] sm:text-sm leading-none">{tab.label}</span>
-          </Link>
+          </a>
         );
       })}
     </div>

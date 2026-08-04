@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
@@ -82,20 +81,20 @@ export default function NotFound() {
 
       {/* Actions */}
       <div className="flex flex-wrap items-center justify-center gap-3">
-        <Link
+        <a
           href={`/${locale}`}
           className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm rounded-xl transition-colors"
         >
           <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>home</span>
           {l.home}
-        </Link>
-        <Link
+        </a>
+        <a
           href={`/${locale}/blog`}
           className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold text-sm rounded-xl transition-colors"
         >
           <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>menu_book</span>
           {l.blog}
-        </Link>
+        </a>
       </div>
 
       {/* Popular shortcuts */}
@@ -107,14 +106,14 @@ export default function NotFound() {
           { id: 'json-formatter', icon: 'code' },
           { id: 'remove-bg',      icon: 'auto_fix_high' },
         ].map(({ id, icon }, i) => (
-          <Link
+          <a
             key={id}
             href={`/${locale}/tools/${id}`}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 border border-slate-800 hover:border-indigo-500/40 text-slate-400 hover:text-slate-200 text-xs rounded-lg transition-all"
           >
             <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
             {l.shortcuts[i]}
-          </Link>
+          </a>
         ))}
       </div>
 

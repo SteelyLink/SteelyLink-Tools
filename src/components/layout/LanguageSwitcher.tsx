@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import { routing } from '@/i18n/routing';
 
@@ -23,7 +23,6 @@ export function LanguageSwitcher({ locale }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
-  const router = useRouter();
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -42,8 +41,8 @@ export function LanguageSwitcher({ locale }: Props) {
     const newPath = segments.join('/');
     localStorage.setItem('preferred-locale', newLocale);
     document.cookie = `preferred-locale=${newLocale};path=/;max-age=31536000;SameSite=Lax`;
-    router.push(newPath);
-    setOpen(false);
+    // A real document load, not router.push — see the note in src/app/layout.tsx.
+    location.assign(newPath);
   }
 
   const current = localeInfo[locale] ?? localeInfo.en;

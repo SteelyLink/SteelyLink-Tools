@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { countWords, generatePassword, type PasswordOptions } from '@/lib/tools/dev-processor';
@@ -1098,7 +1097,7 @@ export function LightToolCore({ mode }: Props) {
     <div className="space-y-5">
       <div className="flex flex-wrap gap-1 p-1 bg-slate-900 border border-slate-800 rounded-xl">
         {LIGHT_TABS.map(tab => (
-          <Link
+          <a
             key={tab.mode}
             href={`/${locale}/tools/${tab.mode}`}
             className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg transition-all ${
@@ -1109,7 +1108,7 @@ export function LightToolCore({ mode }: Props) {
           >
             <span className="material-symbols-outlined text-base">{tab.icon}</span>
             {tab.label}
-          </Link>
+          </a>
         ))}
       </div>
       {content}

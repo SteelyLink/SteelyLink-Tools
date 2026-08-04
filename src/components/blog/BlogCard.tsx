@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { toolRegistry } from '@/lib/tools/registry';
 import type { BlogPostMeta } from '@/types/blog';
 import type { ToolMode } from '@/types/tools';
@@ -31,7 +30,7 @@ export function BlogCard({ post, locale, toolName, toolDesc, categoryLabel, feat
   const colorKey = CATEGORY_COLORS[post.category] ?? CATEGORY_COLORS.light;
 
   return (
-    <Link
+    <a
       href={`/${locale}/blog/${post.slug}`}
       className="group flex flex-col gap-3 p-5 bg-slate-900 border border-slate-800 rounded-xl hover:border-indigo-500/40 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/30"
     >
@@ -75,6 +74,6 @@ export function BlogCard({ post, locale, toolName, toolDesc, categoryLabel, feat
           <span className="material-symbols-outlined text-sm">arrow_forward</span>
         </span>
       </div>
-    </Link>
+    </a>
   );
 }

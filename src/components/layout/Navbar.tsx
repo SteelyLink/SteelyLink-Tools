@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { MobileMenu } from './MobileMenu';
@@ -22,7 +21,7 @@ export async function Navbar({ locale }: Props) {
       <div className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
         {/* Logo */}
         <div className="flex items-center gap-8">
-          <Link
+          <a
             href={`/${locale}`}
             className="text-xl font-bold tracking-tight text-slate-50 flex items-center gap-2 hover:text-white transition-colors"
           >
@@ -33,18 +32,18 @@ export async function Navbar({ locale }: Props) {
               widgets
             </span>
             <span>SteelyLink Tools</span>
-          </Link>
+          </a>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6 text-sm font-medium">
             {navLinks.map((link) => (
-              <Link
+              <a
                 key={link.href}
                 href={link.href}
                 className="text-slate-400 hover:text-slate-100 transition-colors"
               >
                 {link.label}
-              </Link>
+              </a>
             ))}
             <AboutDropdown />
           </div>

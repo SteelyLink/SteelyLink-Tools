@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { toolsByCategory } from '@/lib/tools/registry';
 import type { ToolCategory } from '@/types/tools';
@@ -76,7 +75,7 @@ export async function CategoryPage({ category, locale }: Props) {
       {/* Tool grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {tools.map((tool) => (
-          <Link
+          <a
             key={tool.id}
             href={`/${locale}/tools/${tool.id}`}
             className="group flex items-start gap-4 p-5 bg-slate-900 border border-slate-800 rounded-xl hover:border-indigo-500/40 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/30"
@@ -97,7 +96,7 @@ export async function CategoryPage({ category, locale }: Props) {
                 {tool.id === 'png-to-jpg' ? t('imageConverterDesc') : td(tool.id)}
               </p>
             </div>
-          </Link>
+          </a>
         ))}
       </div>
     </div>

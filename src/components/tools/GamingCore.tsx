@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
@@ -976,7 +975,7 @@ export function GamingCore({ mode }: Props) {
       {/* Tab bar */}
       <div className="flex flex-wrap gap-1 p-1 bg-slate-900 border border-slate-800 rounded-xl">
         {Object.entries(MODES).map(([key, { label, icon }]) => (
-          <Link key={key} href={`/${locale}/tools/${key}`}
+          <a key={key} href={`/${locale}/tools/${key}`}
             className={`flex items-center gap-2 px-3 sm:px-4 py-2 text-sm font-semibold rounded-lg transition-all whitespace-nowrap ${
               activeTab === key
                 ? 'bg-indigo-600 text-white shadow-md pointer-events-none'
@@ -984,7 +983,7 @@ export function GamingCore({ mode }: Props) {
             }`}>
             <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
             {label}
-          </Link>
+          </a>
         ))}
       </div>
 

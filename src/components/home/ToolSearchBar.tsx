@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { toolRegistry } from '@/lib/tools/registry';
 import type { ToolMode } from '@/types/tools';
 
@@ -33,7 +32,6 @@ export function ToolSearchBar({ locale, placeholder }: Props) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
-  const router = useRouter();
 
   const search = useCallback((q: string) => {
     if (!q.trim()) { setResults([]); setShowResults(false); return; }
@@ -57,10 +55,9 @@ export function ToolSearchBar({ locale, placeholder }: Props) {
     setShowResults(true);
   }, [locale]);
 
+  // A real document load, not router.push — see the note in src/app/layout.tsx.
   function handleSelect(id: ToolMode) {
-    router.push(`/${locale}/tools/${id}`);
-    setShowResults(false);
-    setQuery('');
+    location.assign(`/${locale}/tools/${id}`);
   }
 
   return (

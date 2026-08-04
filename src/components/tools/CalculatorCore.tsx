@@ -2,7 +2,6 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
@@ -1482,7 +1481,7 @@ function FinanceTabBar({ mode }: { mode: string }) {
   return (
     <div className="flex flex-wrap gap-1 p-1 bg-slate-900 border border-slate-800 rounded-xl">
       {tabs.map(tab => (
-        <Link
+        <a
           key={tab.mode}
           href={`/${locale}/tools/${tab.mode}`}
           className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg transition-all ${
@@ -1493,7 +1492,7 @@ function FinanceTabBar({ mode }: { mode: string }) {
         >
           <span className="material-symbols-outlined text-base">{tab.icon}</span>
           {tab.label}
-        </Link>
+        </a>
       ))}
     </div>
   );
@@ -1529,7 +1528,7 @@ export function CalculatorCore({ mode }: Props) {
       ) : (
         <div className="flex flex-wrap gap-1 p-1 bg-slate-900 border border-slate-800 rounded-xl">
           {calcTabs.map(tab => (
-            <Link
+            <a
               key={tab.mode}
               href={`/${locale}/tools/${tab.mode}`}
               className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg transition-all ${
@@ -1540,7 +1539,7 @@ export function CalculatorCore({ mode }: Props) {
             >
               <span className="material-symbols-outlined text-base">{tab.icon}</span>
               {tab.label}
-            </Link>
+            </a>
           ))}
         </div>
       )}

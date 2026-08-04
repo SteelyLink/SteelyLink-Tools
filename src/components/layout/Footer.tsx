@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { toolsByCategory } from '@/lib/tools/registry';
 
@@ -18,7 +17,7 @@ export async function Footer({ locale }: Props) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <Link
+            <a
               href={`/${locale}`}
               className="text-lg font-bold text-slate-200 flex items-center gap-2 mb-3 hover:text-white transition-colors"
             >
@@ -29,7 +28,7 @@ export async function Footer({ locale }: Props) {
                 widgets
               </span>
               SteelyLink Tools
-            </Link>
+            </a>
             <p className="text-slate-500 text-sm leading-relaxed">{t('tagline')}</p>
           </div>
 
@@ -39,12 +38,12 @@ export async function Footer({ locale }: Props) {
             <ul className="space-y-2">
               {toolsByCategory.image.slice(0, 5).map((tool) => (
                 <li key={tool.id}>
-                  <Link
+                  <a
                     href={`/${locale}/tools/${tool.id}`}
                     className="text-slate-500 text-sm hover:text-indigo-400 transition-colors"
                   >
                     {tn(tool.id)}
-                  </Link>
+                  </a>
                 </li>
               ))}
             </ul>
@@ -56,12 +55,12 @@ export async function Footer({ locale }: Props) {
             <ul className="space-y-2">
               {toolsByCategory.pdf.map((tool) => (
                 <li key={tool.id}>
-                  <Link
+                  <a
                     href={`/${locale}/tools/${tool.id}`}
                     className="text-slate-500 text-sm hover:text-indigo-400 transition-colors"
                   >
                     {tn(tool.id)}
-                  </Link>
+                  </a>
                 </li>
               ))}
             </ul>
@@ -73,22 +72,22 @@ export async function Footer({ locale }: Props) {
             <ul className="space-y-2">
               {toolsByCategory.dev.slice(0, 4).map((tool) => (
                 <li key={tool.id}>
-                  <Link
+                  <a
                     href={`/${locale}/tools/${tool.id}`}
                     className="text-slate-500 text-sm hover:text-indigo-400 transition-colors"
                   >
                     {tn(tool.id)}
-                  </Link>
+                  </a>
                 </li>
               ))}
               {toolsByCategory.light.slice(0, 2).map((tool) => (
                 <li key={tool.id}>
-                  <Link
+                  <a
                     href={`/${locale}/tools/${tool.id}`}
                     className="text-slate-500 text-sm hover:text-indigo-400 transition-colors"
                   >
                     {tn(tool.id)}
-                  </Link>
+                  </a>
                 </li>
               ))}
             </ul>
@@ -99,12 +98,12 @@ export async function Footer({ locale }: Props) {
         <div className="border-t border-slate-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-slate-500 text-xs">{t('copyright', { year })}</p>
           <div className="flex gap-5 text-xs text-slate-500">
-            <Link href={`/${locale}/privacy`} className="hover:text-indigo-400 transition-colors">
+            <a href={`/${locale}/privacy`} className="hover:text-indigo-400 transition-colors">
               {t('privacy')}
-            </Link>
-            <Link href={`/${locale}/terms`} className="hover:text-indigo-400 transition-colors">
+            </a>
+            <a href={`/${locale}/terms`} className="hover:text-indigo-400 transition-colors">
               {t('terms')}
-            </Link>
+            </a>
           </div>
         </div>
       </div>

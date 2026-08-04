@@ -66,15 +66,28 @@ export default function RootLayout({
     <html suppressHydrationWarning className={inter.className}>
       <head>
         {/*
-          Written here rather than through `metadata.icons` so the link is at the top of
-          <head> and isn't owned by the client router. It has to be in the parsed markup:
-          WebKit reads icon links once, while parsing, and ignores every later change —
-          inserting a link from script does nothing and removing the parsed one to reinsert
-          it loses the icon outright. Both were tried on device, 4c81390 and 1265b7d.
+          Why the site navigates with plain <a> and never next/link:
 
-          favicon.ico exists and is deliberately not declared. An engine that can't read an
-          SVG favicon requests /favicon.ico at the origin root on its own, as do bookmarks
-          and start-page favourites, so declaring it only adds a second candidate.
+          WebKit's icon store is keyed by the full page URL — fragment included — and an
+          entry is only written while a document is parsed. There is no host-level fallback,
+          so a URL Safari never parsed has no icon at all and draws a globe. Client-side
+          routing changes the URL without a parse, which is why every page except the
+          landing one showed a globe on iOS while Chrome looked fine: Chrome's favicon
+          service has an explicit fallback_to_host and was covering for us.
+
+          Scripting around it is not possible. Icon links are read once during parse and
+          every later change is ignored — inserting one from script does nothing, and
+          removing the parsed link to reinsert it loses the icon outright. Both were tried
+          on device, 4c81390 and 1265b7d.
+
+          So navigation has to be real document loads. That is also cheaper here: a page is
+          8-18 KB of HTML against 27 KB for its RSC payload, and it drops the prefetch storm
+          that 104 home-page links used to trigger on a mobile scroll. The only cost is
+          re-running hydration against the already-cached JS.
+
+          favicon.ico exists and is deliberately not declared — an engine that can't read an
+          SVG favicon fetches it from the origin root on its own, as do bookmarks and
+          start-page favourites, so declaring it only adds a second candidate.
 
           The `icon` is the mark on transparency, so a tab adopts the browser's own light or
           dark chrome; `apple-touch-icon` is the opaque tile, because iOS draws that onto a

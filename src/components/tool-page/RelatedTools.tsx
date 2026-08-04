@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { toolRegistry } from '@/lib/tools/registry';
 import type { ToolDefinition, ToolMode } from '@/types/tools';
@@ -26,7 +25,7 @@ export function RelatedTools({ tool, locale }: Props) {
           const related = toolRegistry[id as ToolMode];
           if (!related) return null;
           return (
-            <Link
+            <a
               key={id}
               href={`/${locale}/tools/${id}`}
               className="group flex items-start gap-4 p-5 bg-slate-900 border border-slate-800 rounded-xl hover:border-indigo-500/40 transition-all duration-200 hover:-translate-y-0.5"
@@ -44,7 +43,7 @@ export function RelatedTools({ tool, locale }: Props) {
                   {td(id as ToolMode)}
                 </p>
               </div>
-            </Link>
+            </a>
           );
         })}
       </div>

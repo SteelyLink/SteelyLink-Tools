@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { popularTools, toolRegistry } from '@/lib/tools/registry';
 
@@ -25,7 +24,7 @@ export async function PopularTools({ locale }: Props) {
           const tool = toolRegistry[toolId];
           const isImageConverter = toolId === 'png-to-jpg';
           return (
-            <Link
+            <a
               key={toolId}
               href={`/${locale}/tools/${toolId}`}
               className="group flex items-start gap-4 p-5 bg-slate-900 border border-slate-800 rounded-xl hover:border-indigo-500/40 transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-md hover:shadow-black/30"
@@ -46,7 +45,7 @@ export async function PopularTools({ locale }: Props) {
                   {isImageConverter ? t('imageConverterDesc') : td(toolId)}
                 </p>
               </div>
-            </Link>
+            </a>
           );
         })}
       </div>
@@ -99,7 +98,7 @@ async function AllToolsByCategory({ locale }: { locale: string }) {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {tools.map((tool) => (
-                <Link
+                <a
                   key={tool.id}
                   href={`/${locale}/tools/${tool.id}`}
                   className="group flex items-center gap-2.5 p-3.5 bg-slate-900 border border-slate-800 rounded-lg hover:border-indigo-500/30 hover:bg-slate-800/50 transition-[border-color,background-color] duration-150"
@@ -110,7 +109,7 @@ async function AllToolsByCategory({ locale }: { locale: string }) {
                   <span className="text-slate-300 text-sm group-hover:text-white transition-colors truncate">
                     {tool.id === 'png-to-jpg' ? th('imageConverterName') : tn(tool.id)}
                   </span>
-                </Link>
+                </a>
               ))}
             </div>
           </div>

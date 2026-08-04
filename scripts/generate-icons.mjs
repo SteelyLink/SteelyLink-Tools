@@ -40,7 +40,6 @@ const render = (svg, size) =>
   Buffer.from(new Resvg(svg, { fitTo: { mode: 'width', value: size } }).render().asPng());
 
 const png = (size) => render(tile, size);
-const glyphPng = (size) => render(glyph, size);
 
 /**
  * Packs PNGs into an ICO container. ICO has carried PNG payloads since Vista and every

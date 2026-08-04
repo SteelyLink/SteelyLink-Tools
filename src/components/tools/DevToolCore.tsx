@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
@@ -965,7 +964,7 @@ export function DevToolCore({ mode }: Props) {
     <div className="space-y-5">
       <div className="flex flex-wrap gap-1 p-1 bg-slate-900 border border-slate-800 rounded-xl">
         {DEV_TABS.map(tab => (
-          <Link
+          <a
             key={tab.mode}
             href={`/${locale}/tools/${tab.mode}`}
             className={`flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg transition-all ${
@@ -976,7 +975,7 @@ export function DevToolCore({ mode }: Props) {
           >
             <span className="material-symbols-outlined text-base">{tab.icon}</span>
             {tab.label}
-          </Link>
+          </a>
         ))}
       </div>
       {content}

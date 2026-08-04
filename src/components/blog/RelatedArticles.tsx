@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { blogRegistry } from '@/data/blog/registry';
 
 interface Props {
@@ -18,7 +17,7 @@ export function RelatedArticles({ toolId, locale, toolName, sectionLabel, tutori
   return (
     <section className="mb-10">
       <h2 className="text-xl font-bold text-slate-100 tracking-tight mb-5">{sectionLabel}</h2>
-      <Link
+      <a
         href={`/${locale}/blog/${slug}`}
         className="group flex items-center gap-4 p-5 bg-slate-900 border border-slate-800 rounded-xl hover:border-indigo-500/40 transition-all duration-200"
       >
@@ -36,7 +35,7 @@ export function RelatedArticles({ toolId, locale, toolName, sectionLabel, tutori
         <span className="material-symbols-outlined text-slate-600 group-hover:text-indigo-400 transition-colors flex-shrink-0">
           arrow_forward
         </span>
-      </Link>
+      </a>
     </section>
   );
 }

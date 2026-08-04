@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { FAQAccordion } from '@/components/tool-page/FAQAccordion';
 import type { BlogPostContent, BlogPostMeta } from '@/types/blog';
 import type { ToolDefinition } from '@/types/tools';
@@ -37,11 +36,11 @@ export function BlogPostLayout({
     <div className="max-w-4xl mx-auto px-6 md:px-8 pt-28 pb-20">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-slate-500 mb-6 flex-wrap">
-        <Link href={`/${locale}`} className="hover:text-slate-300 transition-colors">{homeLabel}</Link>
+        <a href={`/${locale}`} className="hover:text-slate-300 transition-colors">{homeLabel}</a>
         <span>/</span>
-        <Link href={`/${locale}/blog`} className="hover:text-slate-300 transition-colors">{backLabel}</Link>
+        <a href={`/${locale}/blog`} className="hover:text-slate-300 transition-colors">{backLabel}</a>
         <span>/</span>
-        <Link href={`/${locale}/tools/${catSlug}`} className="hover:text-slate-300 transition-colors">{catLabel}</Link>
+        <a href={`/${locale}/tools/${catSlug}`} className="hover:text-slate-300 transition-colors">{catLabel}</a>
         <span>/</span>
         <span className="text-slate-300 line-clamp-1">{toolName}</span>
       </nav>
@@ -78,13 +77,13 @@ export function BlogPostLayout({
             <p className="text-slate-500 text-xs">{freeNoRegistrationLabel}</p>
           </div>
         </div>
-        <Link
+        <a
           href={`/${locale}/tools/${post.toolId}`}
           className="btn-primary text-sm py-2 px-5 flex items-center gap-2 flex-shrink-0"
         >
           {tryToolLabel}
           <span className="material-symbols-outlined text-base">open_in_new</span>
-        </Link>
+        </a>
       </div>
 
       {/* Steps */}
@@ -136,13 +135,13 @@ export function BlogPostLayout({
       {content.conclusion && (
         <section className="mb-10 p-6 bg-slate-900/50 border border-slate-800 rounded-2xl">
           <p className="text-slate-300 leading-relaxed">{content.conclusion}</p>
-          <Link
+          <a
             href={`/${locale}/tools/${post.toolId}`}
             className="mt-4 inline-flex items-center gap-2 btn-primary text-sm py-2.5 px-5"
           >
             {tryToolLabel}
             <span className="material-symbols-outlined text-base">open_in_new</span>
-          </Link>
+          </a>
         </section>
       )}
     </div>

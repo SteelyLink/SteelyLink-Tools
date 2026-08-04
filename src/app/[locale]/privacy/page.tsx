@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { routing } from '@/i18n/routing';
 
@@ -29,13 +28,13 @@ export default async function PrivacyPage({ params }: Props) {
 
   return (
     <div className="max-w-3xl mx-auto px-6 md:px-8 py-16">
-      <Link
+      <a
         href={`/${locale}`}
         className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-indigo-400 transition-colors mb-8"
       >
         <span className="material-symbols-outlined text-base">arrow_back</span>
         {t('backHome')}
-      </Link>
+      </a>
 
       <h1 className="text-3xl font-bold text-slate-100 mb-2">{t('title')}</h1>
       <p className="text-slate-500 text-sm mb-10">{t('lastUpdated', { date: updated })}</p>
