@@ -21,14 +21,25 @@
 /*.woff2
   Cache-Control: public, max-age=2592000, stale-while-revalidate=31536000
 
-# Icons and the social card. Same reasoning as fonts: fixed names, so revalidate lazily.
-# The `?v=` on the links in <head> is what forces an immediate refetch when the artwork
-# changes — see ICON_VERSION in scripts/brand.mjs.
+# The tab and home-screen icons. Short, and deliberately without
+# stale-while-revalidate, which the rest of the static assets here do use.
+#
+# These are the two files the browser fetches without being asked to — Safari probes
+# /favicon.ico at the origin root on its own, and iOS probes /apple-touch-icon.png — so
+# they can't be versioned in the URL the way a hashed chunk can, and there's no `?v=` on
+# the links any more (see the note in src/app/layout.tsx). A year of stale-while-revalidate
+# on an unversioned icon means any cache entry a browser has, including an empty or failed
+# one, is served for a year while the refresh happens invisibly in the background. That is
+# a fine trade for a font and a bad one for the one asset whose failure mode is "the tab is
+# blank and nothing you deploy fixes it".
+#
+# An hour, revalidated properly, costs a conditional request that Cloudflare answers with a
+# 304 — a few hundred bytes — and means new artwork is everywhere within the hour.
 /favicon.*
-  Cache-Control: public, max-age=2592000, stale-while-revalidate=31536000
+  Cache-Control: public, max-age=3600
 
 /apple-touch-icon.png
-  Cache-Control: public, max-age=2592000, stale-while-revalidate=31536000
+  Cache-Control: public, max-age=3600
 
 /icon-*.png
   Cache-Control: public, max-age=2592000, stale-while-revalidate=31536000

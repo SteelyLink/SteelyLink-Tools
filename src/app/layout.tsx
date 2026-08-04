@@ -66,42 +66,38 @@ export default function RootLayout({
     <html suppressHydrationWarning className={inter.className}>
       <head>
         {/*
-          Hand-written rather than declared through `metadata.icons`, for two reasons that
-          both showed up as a missing icon in the iOS Safari tab bar.
+          Hand-written rather than declared through `metadata.icons`, because metadata is
+          emitted at the very end of <head> — behind the stylesheet, ten async script tags
+          and every og/twitter meta, tag 44 of 50 — and because the client router re-renders
+          the tags it owns on every navigation, tearing the <link> nodes down and recreating
+          them. Here they are the first thing the page contributes to <head>, and as plain
+          JSX in a root layout that never remounts they are static nodes for the life of the
+          tab.
 
-          Position. Metadata is emitted at the very end of <head>, after the stylesheet,
-          ten async script tags and every og/twitter meta — the icon was the 44th tag in
-          the document. Safari issues that fetch last and at low priority, and on iOS it
-          gives up on the tab icon if it hasn't resolved by the time the page paints. That
-          is why a cold first visit showed nothing and a reload showed the icon: by then it
-          was in the favicon cache and discovery order no longer mattered. Here the links
-          are the first thing in the head the page itself contributes.
+          Three things about this list are specifically about Safari, which is the only
+          engine that has trouble with it:
 
-          Persistence. Tags the metadata API owns are re-rendered by the client router on
-          every navigation, so the <link> nodes are torn down and recreated. Safari resolves
-          a tab icon when the document is parsed and does not re-resolve for a same-document
-          URL change, so once those nodes churn the icon is simply gone — which is why it
-          survived on the page that was loaded from the network and vanished on every page
-          reached by clicking a link. As plain JSX in the root layout, which never remounts,
-          they are static DOM nodes for the lifetime of the tab.
+          Raster last. Safari does not render SVG favicons (support arrives very late in its
+          release history, so any device a visitor is actually holding may not have it). When
+          it has to choose, it takes the last candidate it was given, so the last `icon` here
+          is the .ico. `sizes="any"` on the SVG is what keeps Chrome and Firefox choosing it
+          anyway — they select by size, and "any" outranks a fixed pixel size.
 
-          The three `icon` entries are the mark on transparency, so a tab adopts the
-          browser's own light or dark chrome; `apple-touch-icon` is the opaque tile, because
-          iOS draws that onto a home screen and would composite transparency onto white.
-          See scripts/brand.mjs.
+          No `?v=`. Safari's own fallback, when it can't resolve a declared icon, is to
+          request /favicon.ico at the origin root. A version query means the declared URL and
+          the URL Safari probes are two different cache entries for the same bytes, and a bad
+          or empty entry under one of them is invisible from the other. They're unified here,
+          and freshness is handled by a short max-age in public/_headers instead — see the
+          note there about why stale-while-revalidate came off these.
 
-          `?v=` busts the 30-day cache for clients still holding older artwork. Keep the
-          number in step with ICON_VERSION in scripts/brand.mjs.
+          The `icon` entries are the mark on transparency, so a tab adopts the browser's own
+          light or dark chrome; `apple-touch-icon` is the opaque tile, because iOS draws that
+          onto a home screen and would composite transparency onto white. See brand.mjs.
         */}
-        <link rel="icon" href="/favicon.ico?v=4" sizes="32x32" type="image/x-icon" />
-        <link rel="icon" href="/favicon.png?v=4" sizes="64x64" type="image/png" />
-        <link rel="icon" href="/favicon.svg?v=4" type="image/svg+xml" />
-        <link
-          rel="apple-touch-icon"
-          href="/apple-touch-icon.png?v=4"
-          sizes="180x180"
-          type="image/png"
-        />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
+        <link rel="icon" href="/favicon.png" sizes="64x64" type="image/png" />
+        <link rel="icon" href="/favicon.ico" sizes="32x32" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" type="image/png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         {/*
           The icon font uses `font-display: block`, so first paint of every icon waits

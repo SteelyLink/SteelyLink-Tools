@@ -25,15 +25,17 @@
  */
 
 /**
- * Query string appended to every icon URL. The filenames have to stay put — browsers
- * and iOS probe /favicon.ico and /apple-touch-icon.png directly — but the icons are
- * served with a 30-day max-age plus a year of stale-while-revalidate, so a client that
- * already holds the old artwork would keep drawing it long after a deploy. Bumping
- * this makes the redraw immediate.
+ * Query string appended to the icon URLs in the web manifest, so an installed app picks
+ * up new artwork instead of drawing the copy it cached at install time.
  *
- * Bump on any change to the mark, and keep it in step with src/app/layout.tsx.
+ * The manifest is the only consumer. The <head> links deliberately carry no version —
+ * Safari probes /favicon.ico and iOS probes /apple-touch-icon.png at fixed URLs of their
+ * own, and a version query splits those into a second cache entry that the probe can't
+ * see. Freshness for those comes from a short max-age in public/_headers instead.
+ *
+ * Bump on any change to the mark.
  */
-export const ICON_VERSION = 4;
+export const ICON_VERSION = 5;
 
 /** Diagonal tile gradient, sampled from the original apple-touch-icon. */
 export const GRADIENT = [
