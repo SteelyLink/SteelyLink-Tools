@@ -76,17 +76,21 @@ export default function RootLayout({
           loses the icon outright. Both were tried on device (4c81390, 1265b7d) and both
           failed, so there is no scripted route to changing a tab icon on iOS.
 
-          No `?v=`. Safari's fallback, when it can't resolve a declared icon, is to request
-          /favicon.ico at the origin root; a version query would split the declared URL and
-          the probed URL into two cache entries for the same bytes. Freshness comes from a
-          short max-age in public/_headers instead.
+          One icon candidate, deliberately. favicon.ico exists and is not declared: an
+          engine that can't read an SVG favicon requests /favicon.ico at the origin root on
+          its own, so declaring it buys nothing and costs the guarantee. Declaring both gave
+          Safari a choice between them, it made that choice differently as its cached icon
+          entry expired, and the tab icon came and went with no deploy in between.
 
-          The `icon` entries are the mark on transparency, so a tab adopts the browser's own
-          light or dark chrome; `apple-touch-icon` is the opaque tile, because iOS draws that
-          onto a home screen and would composite transparency onto white. See brand.mjs.
+          No `?v=`, for the same reason the .ico isn't declared — the URL the browser probes
+          has to be the URL the bytes are at. Freshness comes from a short max-age in
+          public/_headers instead.
+
+          The `icon` is the mark on transparency, so a tab adopts the browser's own light or
+          dark chrome; `apple-touch-icon` is the opaque tile, because iOS draws that onto a
+          home screen and would composite transparency onto white. See brand.mjs.
         */}
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
-        <link rel="icon" href="/favicon.ico" sizes="32x32" type="image/x-icon" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" type="image/png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         {/*

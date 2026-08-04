@@ -3,9 +3,10 @@
  *
  * Transparent glyph, for the browser tab:
  *   public/favicon.svg          vector
- *   public/favicon.ico          16 + 32 + 48, for engines that don't take the SVG
  *
- * Opaque tile, for anywhere the icon is drawn onto someone else's surface:
+ * Opaque tile, for anywhere the icon is drawn onto someone else's surface — and for the
+ * .ico, per the note beside it:
+ *   public/favicon.ico          16 + 32 + 48, for engines that don't take the SVG
  *   public/apple-touch-icon.png 180x180  iOS home screen
  *   public/icon-192.png         192x192  web manifest
  *   public/icon-512.png         512x512  web manifest
@@ -71,7 +72,18 @@ function ico(images) {
 
 const outputs = [
   ['favicon.svg', Buffer.from(glyph + '\n', 'utf8')],
-  ['favicon.ico', ico([16, 32, 48].map((size) => ({ size, data: glyphPng(size) })))],
+  /*
+   * Not declared in <head> — see src/app/layout.tsx. This is the file a browser fetches
+   * from the origin root on its own when it can't use the declared SVG, which is engines
+   * without SVG favicon support, and the surfaces that have always read /favicon.ico
+   * directly rather than parsing the page: bookmarks, start-page favourites, history.
+   *
+   * Opaque, unlike favicon.svg, because those surfaces won't draw an .ico with
+   * transparency in it — iOS substitutes a globe. feb92a0 shipped an opaque one and iOS
+   * drew it; b66c810 shipped a transparent one in a byte-identical container and iOS drew
+   * a globe, which isolates transparency from the container.
+   */
+  ['favicon.ico', ico([16, 32, 48].map((size) => ({ size, data: png(size) })))],
   ['apple-touch-icon.png', png(180)],
   ['icon-192.png', png(192)],
   ['icon-512.png', png(512)],

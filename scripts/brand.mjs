@@ -5,13 +5,14 @@
  *
  * There are two forms, because the two places an icon lands want opposite things:
  *
- *   The TILE — apple-touch-icon, the manifest icons, og:image. These get drawn onto a
- *   surface the site doesn't control, so the background has to be painted: iOS
- *   composites transparency onto white, which is where the white square behind the
+ *   The TILE — apple-touch-icon, the manifest icons, og:image, favicon.ico. These get
+ *   drawn onto a surface the site doesn't control, so the background has to be painted:
+ *   iOS composites transparency onto white, which is where the white square behind the
  *   share-sheet icon came from. The tile is also square-cornered, because a rounded
- *   corner is a transparent corner; iOS and Android apply their own mask.
+ *   corner is a transparent corner; iOS and Android apply their own mask. favicon.ico is
+ *   on this side for a different reason — see the note beside it in generate-icons.mjs.
  *
- *   The GLYPH — favicon.svg and favicon.ico. A browser tab is the one place a
+ *   The GLYPH — favicon.svg, and only favicon.svg. A browser tab is the one place a
  *   transparent icon is right: it sits on the tab strip, adopts the user's light or dark
  *   chrome, and needs no card behind it. It's also tiny, so it's drawn full bleed and
  *   with its own proportions — see glyphSvg for why it isn't a crop of the tile.
