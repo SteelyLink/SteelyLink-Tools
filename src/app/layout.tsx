@@ -74,15 +74,22 @@ export default function RootLayout({
           JSX in a root layout that never remounts they are static nodes for the life of the
           tab.
 
-          The order is .ico, .png, .svg, and it is not a matter of taste — it is the order
-          the site shipped with at b6b22f3 and still had at feb92a0, both of which drew the
-          icon correctly in iOS Safari. 9dff318 reversed it on the theory that Safari picks
-          the last candidate and can't draw SVG; the icon stayed blank, so that theory was
-          wrong and this is the arrangement with evidence behind it. Notably the SVG carries
-          no `sizes` — `sizes="any"` is precisely the hint that tells an engine to prefer the
-          scalable candidate over the rasters, which is the wrong instruction to hand the one
-          engine whose SVG favicon support can't be relied on. Don't reorder these without a
-          device to test on.
+          Two candidates, and they are deliberately different artwork. iOS Safari draws a
+          globe placeholder rather than this site's icon whenever the favicon it resolves has
+          any transparency; that was measured across four shipped revisions and is written up
+          in scripts/generate-icons.mjs, along with what it rules out. So the .ico is the
+          opaque tile, which is the file iOS demonstrably drew at feb92a0.
+
+          `sizes="any"` on the SVG is what keeps that away from the desktop. Chrome and
+          Firefox honour it as "prefer the scalable candidate", so they take the transparent
+          glyph; 9dff318 shipped the same attribute and iOS still didn't use the SVG, which
+          is the evidence that it splits the two engines rather than just reordering them.
+          There is no favicon.png any more for the same reason — a third raster is only
+          another way for a desktop browser to land on the tile by accident.
+
+          Reordering or unifying these needs a device to test on. Three attempts here were
+          spent on single-variable guesses that could have been settled by decoding the
+          icons that shipped.
 
           No `?v=`. Safari's own fallback, when it can't resolve a declared icon, is to
           request /favicon.ico at the origin root. A version query means the declared URL and
@@ -95,9 +102,8 @@ export default function RootLayout({
           light or dark chrome; `apple-touch-icon` is the opaque tile, because iOS draws that
           onto a home screen and would composite transparency onto white. See brand.mjs.
         */}
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
         <link rel="icon" href="/favicon.ico" sizes="32x32" type="image/x-icon" />
-        <link rel="icon" href="/favicon.png" sizes="64x64" type="image/png" />
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" type="image/png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         {/*
