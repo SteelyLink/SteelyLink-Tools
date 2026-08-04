@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { FAVICON_DATA_URI } from '@/lib/brand/favicon';
 import { OG_IMAGES, TWITTER_IMAGES } from '@/lib/utils/seo';
 import './globals.css';
 
@@ -67,34 +66,21 @@ export default function RootLayout({
     <html suppressHydrationWarning className={inter.className}>
       <head>
         {/*
-          Hand-written rather than declared through `metadata.icons`, so the links land at
-          the top of <head> instead of behind fifty other tags, and so the client router
-          doesn't own the nodes.
+          Written here rather than through `metadata.icons` so the link is at the top of
+          <head> and isn't owned by the client router. It has to be in the parsed markup:
+          WebKit reads icon links once, while parsing, and ignores every later change —
+          inserting a link from script does nothing and removing the parsed one to reinsert
+          it loses the icon outright. Both were tried on device, 4c81390 and 1265b7d.
 
-          They have to be here, in the parsed markup, and nowhere else. WebKit reads icon
-          links once, while it parses the document, and ignores every later change: a link
-          inserted from script is not picked up, and removing the parsed one to reinsert it
-          loses the icon outright. Both were tried on device (4c81390, 1265b7d) and both
-          failed, so there is no scripted route to changing a tab icon on iOS.
-
-          The icon is inlined as a data URI rather than fetched. A favicon is normally a
-          separate request at the lowest priority the browser has, and when that request is
-          slow or times out Safari draws a globe and doesn't retry — which is what made a
-          fresh load of the same page show the mark on some visits and not others, with no
-          deploy in between and nothing in the file to explain it. Inlined there is no
-          request to lose, and first paint is one round trip shorter. It's 297 characters.
-          FAVICON_DATA_URI is generated from the same glyph as public/favicon.svg so the two
-          can't drift; run `npm run brand:build` after changing the mark.
-
-          One candidate, deliberately. favicon.ico exists and is not declared: an engine
-          that can't read an SVG favicon requests /favicon.ico at the origin root on its
-          own, as do bookmarks and start-page favourites, so declaring it buys nothing.
+          favicon.ico exists and is deliberately not declared. An engine that can't read an
+          SVG favicon requests /favicon.ico at the origin root on its own, as do bookmarks
+          and start-page favourites, so declaring it only adds a second candidate.
 
           The `icon` is the mark on transparency, so a tab adopts the browser's own light or
           dark chrome; `apple-touch-icon` is the opaque tile, because iOS draws that onto a
           home screen and would composite transparency onto white. See brand.mjs.
         */}
-        <link rel="icon" href={FAVICON_DATA_URI} type="image/svg+xml" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" type="image/png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         {/*
