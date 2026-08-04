@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import FaviconSync from '@/components/layout/FaviconSync';
 import { OG_IMAGES, TWITTER_IMAGES } from '@/lib/utils/seo';
 import './globals.css';
 
@@ -69,8 +68,13 @@ export default function RootLayout({
         {/*
           Hand-written rather than declared through `metadata.icons`, so the links land at
           the top of <head> instead of behind fifty other tags, and so the client router
-          doesn't own the nodes. FaviconSync in <body> re-declares them after a client-side
-          navigation — see that file for why that's needed.
+          doesn't own the nodes.
+
+          They have to be here, in the parsed markup, and nowhere else. WebKit reads icon
+          links once, while it parses the document, and ignores every later change: a link
+          inserted from script is not picked up, and removing the parsed one to reinsert it
+          loses the icon outright. Both were tried on device (4c81390, 1265b7d) and both
+          failed, so there is no scripted route to changing a tab icon on iOS.
 
           No `?v=`. Safari's fallback, when it can't resolve a declared icon, is to request
           /favicon.ico at the origin root; a version query would split the declared URL and
@@ -101,7 +105,6 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: TZ_LOCALE_SCRIPT }} />
       </head>
       <body className="min-h-screen flex flex-col" suppressHydrationWarning>
-        <FaviconSync />
         {children}
       </body>
     </html>
