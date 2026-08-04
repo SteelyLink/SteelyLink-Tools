@@ -21,22 +21,7 @@ export const metadata: Metadata = {
     images: TWITTER_IMAGES,
   },
   manifest: '/manifest.webmanifest',
-  // The favicons are the mark on transparency, so a tab adopts the browser's own light
-  // or dark chrome; the apple entry is the opaque tile, because iOS draws it onto a home
-  // screen and would composite transparency onto white. See scripts/brand.mjs.
-  //
-  // `?v=` busts the 30-day icon cache for clients still holding the old artwork.
-  // Keep the number in step with ICON_VERSION in scripts/brand.mjs.
-  icons: {
-    icon: [
-      { url: '/favicon.ico?v=4', sizes: '32x32', type: 'image/x-icon' },
-      { url: '/favicon.png?v=4', sizes: '64x64', type: 'image/png' },
-      { url: '/favicon.svg?v=4', type: 'image/svg+xml' },
-    ],
-    apple: [
-      { url: '/apple-touch-icon.png?v=4', sizes: '180x180', type: 'image/png' },
-    ],
-  },
+  // The icon links are deliberately NOT declared here — see the <head> below.
   appleWebApp: {
     title: 'SteelyLink Tools',
     capable: true,
@@ -80,6 +65,43 @@ export default function RootLayout({
   return (
     <html suppressHydrationWarning className={inter.className}>
       <head>
+        {/*
+          Hand-written rather than declared through `metadata.icons`, for two reasons that
+          both showed up as a missing icon in the iOS Safari tab bar.
+
+          Position. Metadata is emitted at the very end of <head>, after the stylesheet,
+          ten async script tags and every og/twitter meta — the icon was the 44th tag in
+          the document. Safari issues that fetch last and at low priority, and on iOS it
+          gives up on the tab icon if it hasn't resolved by the time the page paints. That
+          is why a cold first visit showed nothing and a reload showed the icon: by then it
+          was in the favicon cache and discovery order no longer mattered. Here the links
+          are the first thing in the head the page itself contributes.
+
+          Persistence. Tags the metadata API owns are re-rendered by the client router on
+          every navigation, so the <link> nodes are torn down and recreated. Safari resolves
+          a tab icon when the document is parsed and does not re-resolve for a same-document
+          URL change, so once those nodes churn the icon is simply gone — which is why it
+          survived on the page that was loaded from the network and vanished on every page
+          reached by clicking a link. As plain JSX in the root layout, which never remounts,
+          they are static DOM nodes for the lifetime of the tab.
+
+          The three `icon` entries are the mark on transparency, so a tab adopts the
+          browser's own light or dark chrome; `apple-touch-icon` is the opaque tile, because
+          iOS draws that onto a home screen and would composite transparency onto white.
+          See scripts/brand.mjs.
+
+          `?v=` busts the 30-day cache for clients still holding older artwork. Keep the
+          number in step with ICON_VERSION in scripts/brand.mjs.
+        */}
+        <link rel="icon" href="/favicon.ico?v=4" sizes="32x32" type="image/x-icon" />
+        <link rel="icon" href="/favicon.png?v=4" sizes="64x64" type="image/png" />
+        <link rel="icon" href="/favicon.svg?v=4" type="image/svg+xml" />
+        <link
+          rel="apple-touch-icon"
+          href="/apple-touch-icon.png?v=4"
+          sizes="180x180"
+          type="image/png"
+        />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         {/*
           The icon font uses `font-display: block`, so first paint of every icon waits
