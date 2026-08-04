@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import FaviconSync from '@/components/layout/FaviconSync';
 import { OG_IMAGES, TWITTER_IMAGES } from '@/lib/utils/seo';
 import './globals.css';
 
@@ -66,37 +67,15 @@ export default function RootLayout({
     <html suppressHydrationWarning className={inter.className}>
       <head>
         {/*
-          Hand-written rather than declared through `metadata.icons`, because metadata is
-          emitted at the very end of <head> — behind the stylesheet, ten async script tags
-          and every og/twitter meta, tag 44 of 50 — and because the client router re-renders
-          the tags it owns on every navigation, tearing the <link> nodes down and recreating
-          them. Here they are the first thing the page contributes to <head>, and as plain
-          JSX in a root layout that never remounts they are static nodes for the life of the
-          tab.
+          Hand-written rather than declared through `metadata.icons`, so the links land at
+          the top of <head> instead of behind fifty other tags, and so the client router
+          doesn't own the nodes. FaviconSync in <body> re-declares them after a client-side
+          navigation — see that file for why that's needed.
 
-          Two candidates, and they are deliberately different artwork. iOS Safari draws a
-          globe placeholder rather than this site's icon whenever the favicon it resolves has
-          any transparency; that was measured across four shipped revisions and is written up
-          in scripts/generate-icons.mjs, along with what it rules out. So the .ico is the
-          opaque tile, which is the file iOS demonstrably drew at feb92a0.
-
-          `sizes="any"` on the SVG is what keeps that away from the desktop. Chrome and
-          Firefox honour it as "prefer the scalable candidate", so they take the transparent
-          glyph; 9dff318 shipped the same attribute and iOS still didn't use the SVG, which
-          is the evidence that it splits the two engines rather than just reordering them.
-          There is no favicon.png any more for the same reason — a third raster is only
-          another way for a desktop browser to land on the tile by accident.
-
-          Reordering or unifying these needs a device to test on. Three attempts here were
-          spent on single-variable guesses that could have been settled by decoding the
-          icons that shipped.
-
-          No `?v=`. Safari's own fallback, when it can't resolve a declared icon, is to
-          request /favicon.ico at the origin root. A version query means the declared URL and
-          the URL Safari probes are two different cache entries for the same bytes, and a bad
-          or empty entry under one of them is invisible from the other. They're unified here,
-          and freshness is handled by a short max-age in public/_headers instead — see the
-          note there about the placeholder rule that was quietly overriding it.
+          No `?v=`. Safari's fallback, when it can't resolve a declared icon, is to request
+          /favicon.ico at the origin root; a version query would split the declared URL and
+          the probed URL into two cache entries for the same bytes. Freshness comes from a
+          short max-age in public/_headers instead.
 
           The `icon` entries are the mark on transparency, so a tab adopts the browser's own
           light or dark chrome; `apple-touch-icon` is the opaque tile, because iOS draws that
@@ -122,6 +101,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: TZ_LOCALE_SCRIPT }} />
       </head>
       <body className="min-h-screen flex flex-col" suppressHydrationWarning>
+        <FaviconSync />
         {children}
       </body>
     </html>

@@ -5,22 +5,16 @@
  *
  * There are two forms, because the two places an icon lands want opposite things:
  *
- *   The TILE — apple-touch-icon, the manifest icons, og:image, favicon.ico. These get
- *   drawn onto a surface the site doesn't control, so the background has to be painted:
- *   iOS composites transparency onto white, which is where the white square behind the
+ *   The TILE — apple-touch-icon, the manifest icons, og:image. These get drawn onto a
+ *   surface the site doesn't control, so the background has to be painted: iOS
+ *   composites transparency onto white, which is where the white square behind the
  *   share-sheet icon came from. The tile is also square-cornered, because a rounded
  *   corner is a transparent corner; iOS and Android apply their own mask.
  *
- *   The GLYPH — favicon.svg, and only favicon.svg. A browser tab is the one place a
+ *   The GLYPH — favicon.svg and favicon.ico. A browser tab is the one place a
  *   transparent icon is right: it sits on the tab strip, adopts the user's light or dark
  *   chrome, and needs no card behind it. It's also tiny, so it's drawn full bleed and
  *   with its own proportions — see glyphSvg for why it isn't a crop of the tile.
- *
- * favicon.ico sits on the tile side of that line even though it's a tab icon, because
- * iOS Safari won't draw a favicon that has any transparency in it — it substitutes a
- * globe. The evidence, and what it rules out, is in scripts/generate-icons.mjs. Desktop
- * still gets the glyph, because favicon.svg carries sizes="any" and Safari doesn't take
- * the SVG either way.
  *
  * Making the favicons tiles was a fix for the share card, back when iOS was falling
  * back to a favicon. It doesn't any more: og:image is a square tile of its own, and

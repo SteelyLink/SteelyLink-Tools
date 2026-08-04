@@ -21,31 +21,16 @@
 /*.woff2
   Cache-Control: public, max-age=2592000, stale-while-revalidate=31536000
 
-# The tab and home-screen icons. Short, and deliberately without
-# stale-while-revalidate, which the rest of the static assets here do use.
+# The tab and home-screen icons. Short, and deliberately without stale-while-revalidate:
+# these URLs can't be versioned — Safari probes /favicon.ico at the origin root on its own
+# — so a long stale window would pin whatever entry a browser already has, including a
+# failed one, on the asset whose failure mode is "nothing you deploy fixes it".
 #
-# These are the files a browser fetches without being asked to — Safari probes
-# /favicon.ico at the origin root on its own, and iOS probes /apple-touch-icon.png — so
-# they can't be versioned in the URL the way a hashed chunk can, and there's no `?v=` on
-# the links any more (see the note in src/app/layout.tsx). A long stale-while-revalidate
-# on an unversioned icon means any cache entry a browser has, including an empty or failed
-# one, is served for that whole window while the refresh happens invisibly in the
-# background. That is a fine trade for a font and a bad one for the one asset whose
-# failure mode is "the tab is blank and nothing you deploy fixes it".
-#
-# Every path here is written out in full rather than matched with a wildcard, and that is
-# load-bearing. `/favicon.*` matched nothing: Pages honours a `*` that stands for a whole
-# trailing segment, not one spliced into the middle of a filename. So the rule that was
-# supposed to govern these three files was inert, and what actually reached the browser
-# came from the `/:locale` rule further down — a placeholder matches ANY single root-level
-# segment, so `favicon.ico`, `apple-touch-icon.png` and `manifest.webmanifest` all read as
-# a locale and all collected its stale-while-revalidate=604800. A week of serving whatever
-# entry the browser already had, on exactly the asset that must not do that.
-#
-# The tell, if this ever regresses: fetch /manifest.webmanifest and look for two
-# Cache-Control values concatenated in one header. Pages appends on every rule that
-# matches, so a second value is a second rule you didn't intend to hit. Image types don't
-# show it, because Cloudflare's zone Browser Cache TTL rewrites max-age on those.
+# Full paths, not wildcards. `/favicon.*` matches nothing — Pages honours a `*` that
+# stands for a whole trailing segment, not one spliced into a filename — so that rule was
+# inert and these files were picked up by `/:locale` below, since a placeholder matches
+# any single root-level segment. The tell if it regresses: fetch /manifest.webmanifest and
+# look for two Cache-Control values concatenated, because Pages appends on every match.
 /favicon.ico
   Cache-Control: public, max-age=3600
 
@@ -79,10 +64,8 @@
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
 # The listing and standalone pages, which the two rules above do NOT cover — `/blog/*`
-# needs a segment after `blog`, so /en/blog itself fell through to no cache rule at all
-# and Pages served it must-revalidate, paying a round trip on every visit to the page the
-# navbar links to. Found while auditing the placeholder problem above; same class of bug.
-# A placeholder is safe here because it's pinned by a literal second segment.
+# needs a segment after `blog`, so /en/blog itself fell through to no rule at all and was
+# served must-revalidate. A placeholder is safe here, pinned by a literal second segment.
 /:locale/blog
   Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
@@ -103,10 +86,8 @@
 
 # Locale home pages, and the `.txt` RSC payloads beside them. Short browser TTL because
 # this is the most-linked entry point, long stale window so the edge answers immediately.
-#
-# The six locales are enumerated rather than written as `/:locale`, because a placeholder
-# matches any single root-level segment — which meant this rule was also the one governing
-# every root-level file the site ships, favicons included. See the note above the icons.
+# Enumerated rather than `/:locale`, which would also match every root-level file the site
+# ships, favicons included — see the note above the icons.
 /en
   Cache-Control: public, max-age=3600, stale-while-revalidate=604800
 
