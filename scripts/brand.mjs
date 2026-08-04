@@ -130,11 +130,18 @@ ${markShapes()}
  * origin is 0 0 on purpose: Safari renders an offset origin unreliably in a favicon,
  * and a tab icon that silently fails to draw on iOS is not worth the tidier geometry.
  *
+ * width and height are set as well as the viewBox, which is what gives the file an
+ * intrinsic size. Without them WebKit drew the tab icon only some of the time — the
+ * favicon rasterizer has no layout box to derive a size from and doesn't reliably fall
+ * back to the viewBox the way Blink does, so Chrome was stable while iOS was a coin
+ * flip on every load. tileSvg has always written both, and none of the rasters it feeds
+ * ever had the problem.
+ *
  * @param {object} [opts]
  * @param {string} [opts.fill]   glyph colour
  */
 export function glyphSvg({ fill = GLYPH_COLOR } = {}) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 960">
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="960" height="960" viewBox="0 0 960 960">
   <path transform="translate(0,960)" d="M677-409 409-677l268-267 267 267-267 268ZM31-489v-379h378v379H31ZM489-31v-378h379v378H489ZM31-31v-378h378v378H31Z" fill="${fill}"/>
 </svg>`;
 }
