@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { scrollToSection } from '@/lib/utils/scroll';
+import { SectionLink } from './SectionLink';
 
 interface Props {
   locale: string;
-  navLinks: { href: string; label: string }[];
+  navLinks: { href: string; label: string; sectionId?: string }[];
   getStartedLabel: string;
 }
 
@@ -33,24 +35,26 @@ export function MobileMenu({ locale, navLinks, getStartedLabel }: Props) {
 
       {open && (
         <div className="absolute top-full left-0 right-0 bg-slate-900 border-b border-slate-800 py-4 px-6 space-y-3 animate-fade-in">
-          {navLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="block text-slate-300 hover:text-white py-2 transition-colors"
-            >
-              {link.label}
-            </a>
-          ))}
+          {navLinks.map((link) => {
+            const className = 'block text-slate-300 hover:text-white py-2 transition-colors';
+            return link.sectionId ? (
+              <SectionLink
+                key={link.label}
+                {...link}
+                sectionId={link.sectionId}
+                className={className}
+                onNavigate={() => setOpen(false)}
+              />
+            ) : (
+              <a key={link.label} href={link.href} className={className}>
+                {link.label}
+              </a>
+            );
+          })}
           <button
             onClick={() => {
               setOpen(false);
-              const el = document.getElementById('categories');
-              if (el) {
-                const top = el.getBoundingClientRect().top + window.scrollY - 80;
-                window.scrollTo({ top, behavior: 'smooth' });
-                setTimeout(() => window.dispatchEvent(new CustomEvent('highlight-categories')), 500);
-              }
+              scrollToSection('categories');
             }}
             className="block w-full btn-primary text-center text-sm mt-2"
           >

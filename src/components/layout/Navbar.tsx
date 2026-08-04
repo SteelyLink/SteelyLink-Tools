@@ -3,6 +3,7 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { MobileMenu } from './MobileMenu';
 import { GetStartedButton } from './GetStartedButton';
 import { AboutDropdown } from './AboutDropdown';
+import { SectionLink } from './SectionLink';
 interface Props {
   locale: string;
 }
@@ -10,10 +11,11 @@ interface Props {
 export async function Navbar({ locale }: Props) {
   const t = await getTranslations({ locale, namespace: 'Nav' });
 
+  // sectionId means "scroll to this on the home page instead of navigating" — SectionLink.
   const navLinks = [
-    { href: `/${locale}#categories`, label: t('tools') },
+    { href: `/${locale}`, label: t('tools'), sectionId: 'categories' },
     { href: `/${locale}/blog`, label: t('blog') },
-    { href: `/${locale}#popular`, label: t('resources') },
+    { href: `/${locale}`, label: t('resources'), sectionId: 'popular' },
   ];
 
   return (
@@ -36,15 +38,16 @@ export async function Navbar({ locale }: Props) {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6 text-sm font-medium">
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="text-slate-400 hover:text-slate-100 transition-colors"
-              >
-                {link.label}
-              </a>
-            ))}
+            {navLinks.map((link) => {
+              const className = 'text-slate-400 hover:text-slate-100 transition-colors';
+              return link.sectionId ? (
+                <SectionLink key={link.label} {...link} sectionId={link.sectionId} className={className} />
+              ) : (
+                <a key={link.label} href={link.href} className={className}>
+                  {link.label}
+                </a>
+              );
+            })}
             <AboutDropdown />
           </div>
         </div>

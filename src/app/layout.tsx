@@ -94,6 +94,16 @@ export default function RootLayout({
           home screen and would composite transparency onto white. See brand.mjs.
         */}
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        {/*
+          267 bytes, preloaded because WebKit starts its icon load only once the document
+          has finished parsing, at the lowest priority any request gets. On a first visit
+          the file isn't cached yet, so that fetch queues behind every other resource — and
+          if it hasn't landed by the time you navigate away, no icon entry is written and
+          the tab keeps the globe. The second visit hits cache and the icon appears, which
+          is the "only works the second time" symptom. Preloading starts the fetch with the
+          HTML instead, so the icon load is a cache hit whenever it runs.
+        */}
+        <link rel="preload" href="/favicon.svg" as="image" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" type="image/png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         {/*
