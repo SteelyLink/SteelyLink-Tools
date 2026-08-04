@@ -74,29 +74,30 @@ export default function RootLayout({
           JSX in a root layout that never remounts they are static nodes for the life of the
           tab.
 
-          Three things about this list are specifically about Safari, which is the only
-          engine that has trouble with it:
-
-          Raster last. Safari does not render SVG favicons (support arrives very late in its
-          release history, so any device a visitor is actually holding may not have it). When
-          it has to choose, it takes the last candidate it was given, so the last `icon` here
-          is the .ico. `sizes="any"` on the SVG is what keeps Chrome and Firefox choosing it
-          anyway — they select by size, and "any" outranks a fixed pixel size.
+          The order is .ico, .png, .svg, and it is not a matter of taste — it is the order
+          the site shipped with at b6b22f3 and still had at feb92a0, both of which drew the
+          icon correctly in iOS Safari. 9dff318 reversed it on the theory that Safari picks
+          the last candidate and can't draw SVG; the icon stayed blank, so that theory was
+          wrong and this is the arrangement with evidence behind it. Notably the SVG carries
+          no `sizes` — `sizes="any"` is precisely the hint that tells an engine to prefer the
+          scalable candidate over the rasters, which is the wrong instruction to hand the one
+          engine whose SVG favicon support can't be relied on. Don't reorder these without a
+          device to test on.
 
           No `?v=`. Safari's own fallback, when it can't resolve a declared icon, is to
           request /favicon.ico at the origin root. A version query means the declared URL and
           the URL Safari probes are two different cache entries for the same bytes, and a bad
           or empty entry under one of them is invisible from the other. They're unified here,
           and freshness is handled by a short max-age in public/_headers instead — see the
-          note there about why stale-while-revalidate came off these.
+          note there about the placeholder rule that was quietly overriding it.
 
           The `icon` entries are the mark on transparency, so a tab adopts the browser's own
           light or dark chrome; `apple-touch-icon` is the opaque tile, because iOS draws that
           onto a home screen and would composite transparency onto white. See brand.mjs.
         */}
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
+        <link rel="icon" href="/favicon.ico" sizes="32x32" type="image/x-icon" />
         <link rel="icon" href="/favicon.png" sizes="64x64" type="image/png" />
-        <link rel="icon" href="/favicon.ico" sizes="32x32" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" type="image/png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         {/*
