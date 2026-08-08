@@ -10,7 +10,14 @@
 
 **[▶ Open SteelyLink Tools](https://tools.steelylink.com)**
 
+### **[tools.steelylink.com](https://tools.steelylink.com)**
+
+Type that address into any browser and every tool below is ready to use.
+Nothing to sign up for, nothing to install, nothing to pay.
+
 `Next.js 15` · `React 19` · `TypeScript` · `Tailwind CSS` · `WebAssembly` · `MIT`
+
+**English** · [简体中文](README.zh-CN.md)
 
 </div>
 
