@@ -25,6 +25,18 @@ const ASSETS = [
   ['leaflet/dist/leaflet.css', 'vendor/leaflet/leaflet.css', 'file'],
   // leaflet.css references images/ with relative URLs, so it has to travel with them.
   ['leaflet/dist/images', 'vendor/leaflet/images', 'dir'],
+  // The ONNX runtime behind the background remover. Transformers.js otherwise points
+  // these at cdn.jsdelivr.net at runtime, and the whole model download stalls there.
+  //
+  // Two pairs, because two engines. ORT's WebGPU provider has to suspend the wasm stack
+  // while the GPU works, which without JSPI means an Asyncify-instrumented binary — and
+  // only that build exports the `webgpuInit` the WebGPU backend calls. JavaScriptCore
+  // runs Asyncify far too slowly to ship, so Safari has to take the plain CPU build.
+  // The browser fetches one pair, never both; see ImageEditingCore.tsx for the choice.
+  ['onnxruntime-web/dist/ort-wasm-simd-threaded.mjs', 'vendor/ort/ort-wasm-simd-threaded.mjs', 'file'],
+  ['onnxruntime-web/dist/ort-wasm-simd-threaded.wasm', 'vendor/ort/ort-wasm-simd-threaded.wasm', 'file'],
+  ['onnxruntime-web/dist/ort-wasm-simd-threaded.asyncify.mjs', 'vendor/ort/ort-wasm-simd-threaded.asyncify.mjs', 'file'],
+  ['onnxruntime-web/dist/ort-wasm-simd-threaded.asyncify.wasm', 'vendor/ort/ort-wasm-simd-threaded.asyncify.wasm', 'file'],
 ];
 
 let copied = 0;

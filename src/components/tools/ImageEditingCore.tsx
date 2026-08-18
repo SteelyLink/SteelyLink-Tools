@@ -115,6 +115,25 @@ function Spinner({ label }: { label: string }) {
 
 const CHECKERBOARD = "url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PHJlY3Qgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMzM0MTU1Ii8+PHJlY3QgeD0iMTAiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIGZpbGw9IiMzMzQxNTUiLz48cmVjdCB4PSIwIiB5PSIxMCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjMjEyOTNiIi8+PHJlY3QgeD0iMTAiIHk9IjAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIgZmlsbD0iIzIxMjkzYiIvPjwvc3ZnPg==')";
 
+const ORT_PREFIX = '/vendor/ort/ort-wasm-simd-threaded';
+
+/**
+ * Whether this is Safari, which decides which ONNX runtime binary can be loaded.
+ *
+ * Not a stylistic browser sniff — there is no feature to test for. ORT's WebGPU provider
+ * suspends the wasm stack while the GPU works, which without JSPI requires an
+ * Asyncify-instrumented build, and JavaScriptCore runs Asyncify far too slowly for that
+ * build to be worth shipping to Safari. So the choice is made by name, the same way
+ * transformers.js makes it internally.
+ */
+function isSafari(): boolean {
+  const ua = navigator.userAgent;
+  return (
+    (navigator.vendor || '').includes('Apple') &&
+    !/CriOS|FxiOS|EdgiOS|OPiOS|Chrome|Android/i.test(ua)
+  );
+}
+
 function RemoveBgMode() {
   const t = useTranslations('Tool');
   const [file, setFile] = useState<File | null>(null);
@@ -161,12 +180,27 @@ function RemoveBgMode() {
             setDlProgress(sumTotal > 0 ? Math.round((sumLoaded / sumTotal) * 100) : 0);
           }
         };
-        const hasWebGPU = !!(navigator as any).gpu && await (navigator as any).gpu.requestAdapter().catch(() => null);
-        const device = hasWebGPU ? 'webgpu' : 'wasm';
-        const [model, processor] = await Promise.all([
+        // The runtime is served from this origin, and the pair has to match the device
+        // asked for below: only the Asyncify build exports the `webgpuInit` that ORT's
+        // WebGPU backend calls. Left to itself transformers.js hands Safari the plain
+        // CPU binary and fetches it from cdn.jsdelivr.net, so asking for WebGPU there
+        // failed with "webgpuInit is not a function → no available backend found" —
+        // navigator.gpu exists on iOS now and says yes, but the binary has no WebGPU in it.
+        const gpu = !isSafari()
+          && !!(navigator as any).gpu
+          && !!(await (navigator as any).gpu.requestAdapter().catch(() => null));
+        env.backends.onnx.wasm!.wasmPaths = gpu
+          ? { mjs: `${ORT_PREFIX}.asyncify.mjs`, wasm: `${ORT_PREFIX}.asyncify.wasm` }
+          : { mjs: `${ORT_PREFIX}.mjs`, wasm: `${ORT_PREFIX}.wasm` };
+
+        const load = (device: 'webgpu' | 'wasm') => Promise.all([
           AutoModel.from_pretrained('briaai/RMBG-1.4', { device, dtype: 'q8', progress_callback: progressCb }),
           AutoProcessor.from_pretrained('briaai/RMBG-1.4', { progress_callback: progressCb }),
         ]);
+        // An adapter that answers is not a device that works — a driver can still refuse
+        // at session creation. The CPU provider is in the same binary and the weights are
+        // already cached by now, so the retry costs a few seconds, not another download.
+        const [model, processor] = gpu ? await load('webgpu').catch(() => load('wasm')) : await load('wasm');
         segmenterRef.current = { model, processor, RawImage };
         setDownloading(false);
       }
