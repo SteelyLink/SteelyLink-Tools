@@ -31,3 +31,12 @@ Thumbs.db
 # copied out of node_modules by scripts/copy-vendor.mjs on every build
 public/pdfjs/
 public/vendor/
+
+# written by scripts/generate-static.mjs on every build, from the tool registry and the
+# blog index — the script is the source, these are its output. Tracking them lets the two
+# drift, and sitemap.xml restamps 1398 <lastmod> dates on every run, so a one-line code
+# change arrives as a 2796-line diff.
+public/sitemap.xml
+public/feed.xml
+public/robots.txt
+public/manifest.webmanifest
