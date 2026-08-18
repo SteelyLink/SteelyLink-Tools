@@ -939,7 +939,7 @@ function BankBin() {
         const countryName = d.country?.name as string | undefined;
         const countryNode = alpha2 ? (
           <span className="flex items-center gap-1.5">
-            <Image src={`https://flagcdn.com/${alpha2.toLowerCase()}.svg`} width={20} height={15} alt={alpha2} className="rounded-sm object-cover flex-shrink-0" unoptimized />
+            <Image src={`/vendor/flags/${alpha2.toLowerCase()}.svg`} width={20} height={15} alt={alpha2} className="rounded-sm object-cover flex-shrink-0" unoptimized />
             <span>{countryName || alpha2}</span>
             {countryName && <span className="text-slate-500 text-xs font-normal">({alpha2})</span>}
           </span>
@@ -947,7 +947,7 @@ function BankBin() {
         return (
           <div className="animate-fade-in card-surface p-4 space-y-0">
             {([
-              { label: t('cardBrandLabel'),    value: d.scheme ? String(d.scheme) : renderValue((data as Record<string, unknown>).brand) },
+              { label: t('cardBrandLabel'),    value: renderValue(d.scheme) },
               { label: t('cardTypeLabel'),     value: renderValue((data as Record<string, unknown>).type) },
               { label: t('bankLabel'),         value: renderValue(d.bank?.name) },
               { label: t('countryRegionLabel'), value: countryNode },
@@ -1016,7 +1016,7 @@ function FlagImg({ code, className = '' }: { code: string; className?: string })
   if (!country) return <span className="text-slate-500 text-xs font-mono w-5">{code.slice(0, 2)}</span>;
   return (
     <Image
-      src={`https://flagcdn.com/${country}.svg`}
+      src={`/vendor/flags/${country}.svg`}
       width={20} height={15}
       alt={code}
       className={`rounded-sm flex-shrink-0 object-cover ${className}`}

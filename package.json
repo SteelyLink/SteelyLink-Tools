@@ -26,6 +26,7 @@
     "@jsquash/webp": "^1.5.0",
     "@types/leaflet": "^1.9.21",
     "docx": "^9.6.1",
+    "flag-icons": "^7.5.0",
     "gifenc": "^1.0.3",
     "heic2any": "^0.0.4",
     "jsqr": "^1.4.0",

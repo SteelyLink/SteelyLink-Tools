@@ -37,6 +37,13 @@ const ASSETS = [
   ['onnxruntime-web/dist/ort-wasm-simd-threaded.wasm', 'vendor/ort/ort-wasm-simd-threaded.wasm', 'file'],
   ['onnxruntime-web/dist/ort-wasm-simd-threaded.asyncify.mjs', 'vendor/ort/ort-wasm-simd-threaded.asyncify.mjs', 'file'],
   ['onnxruntime-web/dist/ort-wasm-simd-threaded.asyncify.wasm', 'vendor/ort/ort-wasm-simd-threaded.asyncify.wasm', 'file'],
+  // Flags for the BIN lookup and the currency converter, previously hotlinked from
+  // flagcdn.com. A blocked image host doesn't fail, it hangs, and the result row would
+  // sit there half-drawn. 271 files, ~2.4 MB on disk — a visitor fetches exactly one of
+  // them, so the page weight is a couple of kilobytes either way.
+  //
+  // 4x3 rather than 1x1: the rows render them at 20x15.
+  ['flag-icons/flags/4x3', 'vendor/flags', 'dir'],
 ];
 
 let copied = 0;

@@ -41,9 +41,12 @@
  *      few minutes: long enough that a burst doesn't hammer a BIN nobody can resolve,
  *      short enough that it heals on the next window rather than being stuck blank.
  *
- * Set HANDY_API_KEY in the Pages project to remove the rationing entirely. Without it,
- * bank and country come back blank under burst rather than wrong, and heal on the
- * partial TTL.
+ * Set HANDY_API_KEY in the Pages project to raise the ceiling. A key meters per account
+ * rather than per source IP, which is the part that matters here — one visitor's lookup
+ * stops spending the whole colo's budget. It is still a ceiling, not an exemption: the
+ * free tier is single-digit requests per minute and a few thousand a month, so the cache
+ * below carries just as much weight with a key as without one. Without a key, bank and
+ * country come back blank under burst rather than wrong, and heal on the partial TTL.
  */
 
 type Env = { HANDY_API_KEY?: string };
@@ -54,9 +57,14 @@ type Country = { name?: string; alpha2?: string; emoji?: string; currency?: stri
 type BinInfo = {
   scheme: string | null;
   type: string | null;
-  brand: string | null;
+  /**
+   * Card tier — "Gold", "Platinum", "World". One field, because the two providers put it
+   * in different places: handyapi has a dedicated `CardTier`, binlist folds it into
+   * `brand` ("Visa Gold"). Deliberately not also exposed as `brand`: that name reads like
+   * the card network, and a caller that treats it as one renders "Gold" where "Visa"
+   * belongs.
+   */
   category: string | null;
-  prepaid: boolean | null;
   bank: Bank | null;
   country: Country | null;
 };
@@ -262,22 +270,13 @@ function merge(bin: string, bl: any, rawHa: any): BinInfo {
     if (!country[key]) delete country[key];
   }
 
-  const prepaid =
-    typeof ha?.Prepaid === 'boolean'
-      ? ha.Prepaid
-      : typeof bl?.prepaid === 'boolean'
-        ? bl.prepaid
-        : null;
-
   return {
     scheme: normalizeScheme(
       lower(ha?.Scheme) ?? lower(bl?.scheme) ?? schemeFromPrefix(bin) ?? undefined,
       bin
     ),
     type: lower(ha?.Type) ?? lower(bl?.type) ?? null,
-    brand: titleCase(firstOf(ha?.CardTier, bl?.brand)),
     category: titleCase(firstOf(ha?.CardTier, bl?.brand)),
-    prepaid,
     bank: bank.name ? bank : null,
     country: country.alpha2 || country.name ? country : null,
   };
@@ -288,7 +287,20 @@ const isComplete = (info: BinInfo) =>
   Boolean(info.scheme && info.type && info.bank?.name && info.country?.name);
 
 /** At least one provider recognised the number — as opposed to us guessing the network. */
-const isFound = (info: BinInfo) => Boolean(info.type || info.bank || info.country || info.brand);
+const isFound = (info: BinInfo) => Boolean(info.type || info.bank || info.country || info.category);
+
+/**
+ * Whether handyapi declined to answer, as opposed to answering that it doesn't know.
+ *
+ * The difference decides what the caller is told when nothing was found: only handyapi is
+ * authoritative enough for "this BIN doesn't exist" — binlist is documented above as
+ * returning an empty stub for whole UnionPay ranges, so its silence proves nothing. A null
+ * here is a timeout or a non-2xx; the rate limit arrives as HTTP 200 with the refusal in
+ * the body, which is exactly the case a status check would miss.
+ */
+const handyRefused = (raw: any) =>
+  raw === null ||
+  (typeof raw?.Status === 'string' && raw.Status.toUpperCase().includes('RATE LIMIT'));
 
 export const onRequest: PagesFunction<Env> = async (context) => {
   const bin = (context.params.bin as string).replace(/\D/g, '').slice(0, 8);
@@ -322,6 +334,14 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   }
 
   if (!isFound(info)) {
+    // Nothing came back — but "we asked and it isn't a card" and "we never got to ask"
+    // need different advice, and the second one heals by itself in under a minute.
+    if (handyRefused(ha)) {
+      return Response.json(
+        { error: 'Lookup is rate-limited right now. Try again in about a minute.' },
+        { status: 503, headers: { 'Cache-Control': 'no-store', 'Retry-After': '60' } }
+      );
+    }
     return Response.json(
       { error: `No data found for BIN ${bin}. This BIN may not be in our database yet.` },
       { status: 404, headers: { 'Cache-Control': 'no-store' } }
