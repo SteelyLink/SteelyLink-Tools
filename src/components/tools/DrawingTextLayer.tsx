@@ -187,6 +187,15 @@ export function startColorAtCaret(root: HTMLElement, color: string): void {
  */
 let savedRange: Range | null = null;
 
+/**
+ * Colour chosen for the next characters but not yet spent. Opening a span at the
+ * caret is not enough on its own: picking a colour moves focus to the swatch, and
+ * clicking back into the text to carry on typing puts the caret wherever the click
+ * landed — outside that span, so the new characters came out in the old colour.
+ * Held here until an insertion actually happens (see armPendingColor).
+ */
+let pendingColor: string | null = null;
+
 function trackSelection(root: HTMLElement): () => void {
   const onChange = () => {
     const sel = window.getSelection();
@@ -198,7 +207,25 @@ function trackSelection(root: HTMLElement): () => void {
   return () => {
     document.removeEventListener('selectionchange', onChange);
     savedRange = null;
+    pendingColor = null;
   };
+}
+
+/**
+ * Spends the pending colour on the character about to be inserted. Runs from
+ * beforeinput for ordinary typing and from compositionstart for IME input — the
+ * DOM must be settled before composition begins, never rearranged during it.
+ */
+function armPendingColor(root: HTMLElement): void {
+  if (!pendingColor) return;
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+  const range = sel.getRangeAt(0);
+  if (!root.contains(range.commonAncestorContainer)) return;
+  const color = pendingColor;
+  pendingColor = null;
+  if (colorOf(range.startContainer, '') === color) return; // already typing in it
+  startColorAtCaret(root, color);
 }
 
 /**
@@ -213,7 +240,14 @@ export function applyColorToEditor(root: HTMLElement, color: string): void {
     sel?.removeAllRanges();
     sel?.addRange(savedRange);
   }
-  if (!applyColorToSelection(root, color)) startColorAtCaret(root, color);
+  if (applyColorToSelection(root, color)) {
+    pendingColor = null; // spent on the selection
+  } else {
+    startColorAtCaret(root, color);
+    // Also remember it: if focus goes to the swatch and the user clicks back into
+    // the text, the span opened above is no longer where the caret ends up.
+    pendingColor = color;
+  }
   const after = window.getSelection();
   if (after && after.rangeCount) savedRange = after.getRangeAt(0).cloneRange();
 }
@@ -335,7 +369,18 @@ function TextItemView({
     // Without it the first characters are bare text nodes that take whatever the
     // colour picker holds at commit time — retro-colouring text already typed.
     if (!item.runs.length) startColorAtCaret(el, fallbackColorRef.current);
-    return () => { stopTracking(); registerEditor(null); };
+    const onBeforeInput = (e: Event) => {
+      if ((e as InputEvent).inputType === 'insertText') armPendingColor(el);
+    };
+    const onCompositionStart = () => armPendingColor(el);
+    el.addEventListener('beforeinput', onBeforeInput);
+    el.addEventListener('compositionstart', onCompositionStart);
+    return () => {
+      el.removeEventListener('beforeinput', onBeforeInput);
+      el.removeEventListener('compositionstart', onCompositionStart);
+      stopTracking();
+      registerEditor(null);
+    };
     // runs and the colour are deliberately read only at open: re-running this
     // would reset the DOM out from under the caret mid-typing.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -412,12 +457,19 @@ function TextItemView({
   if (isEditing) {
     return (
       <div
+        // Distinct keys matter: without them React sees a div replaced by a div and
+        // reuses the same node, then appends the display spans next to the text
+        // nodes the browser put there while editing — every commit showed the
+        // content twice. Different keys mount a fresh node and drop the old one.
+        key="editor"
         ref={elRef}
         contentEditable
         suppressContentEditableWarning
         // No children and no dangerouslySetInnerHTML on purpose — the effect above
         // owns this element's content. React must never touch it again.
         onKeyDown={(e) => {
+          // Enter closing an IME candidate list must not commit the text box.
+          if (e.nativeEvent.isComposing) { e.stopPropagation(); return; }
           if (e.key === 'Enter') { e.preventDefault(); commit(); }
           else if (e.key === 'Escape') { e.preventDefault(); commit(); }
           e.stopPropagation();
@@ -436,6 +488,7 @@ function TextItemView({
 
   return (
     <div
+      key="view"
       ref={elRef}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
