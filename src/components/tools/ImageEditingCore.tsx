@@ -4,6 +4,11 @@ import React, { useState, useRef, useCallback, useEffect, useReducer } from 'rea
 import { useTranslations } from 'next-intl';
 import { ImageTabBar } from './ImageTabBar';
 import WATERMARK_FONTS from '@/lib/fonts/watermark-fonts.json';
+import {
+  DrawingTextLayer, useCanvasScale, drawTextItems, newTextItem,
+  serializeEditor, applyColorToEditor, CANVAS_W, CANVAS_H,
+  type TextItem, type TextRun,
+} from './DrawingTextLayer';
 import type { CompressFormat } from '@/types/tools';
 
 export type ImageEditMode = 'remove-bg' | 'add-watermark' | 'drawing-canvas' | 'image-batch';
@@ -755,13 +760,20 @@ function WatermarkMode() {
 
 type DrawTool = 'pen' | 'eraser' | 'rect' | 'circle' | 'line' | 'text' | 'fill';
 
+/** One undo step: the bitmap plus the text objects floating above it. */
+interface DrawSnapshot {
+  pixels: ImageData;
+  texts: TextItem[];
+}
+
 interface DrawState {
-  history: ImageData[];
+  history: DrawSnapshot[];
   historyIdx: number;
 }
 
 type DrawAction =
-  | { type: 'push'; snapshot: ImageData }
+  | { type: 'push'; snapshot: DrawSnapshot }
+  | { type: 'pushTexts'; texts: TextItem[] }
   | { type: 'undo' }
   | { type: 'redo' };
 
@@ -770,6 +782,15 @@ function drawReducer(state: DrawState, action: DrawAction): DrawState {
     case 'push': {
       const trimmed = state.history.slice(0, state.historyIdx + 1);
       const next = [...trimmed, action.snapshot].slice(-50); // keep last 50
+      return { history: next, historyIdx: next.length - 1 };
+    }
+    case 'pushTexts': {
+      // Text edits leave the bitmap untouched, so the previous ImageData is
+      // reused by reference — a text step costs a small array, not 1.6MB.
+      const current = state.history[state.historyIdx];
+      if (!current) return state;
+      const trimmed = state.history.slice(0, state.historyIdx + 1);
+      const next = [...trimmed, { pixels: current.pixels, texts: action.texts }].slice(-50);
       return { history: next, historyIdx: next.length - 1 };
     }
     case 'undo':
@@ -791,11 +812,29 @@ function DrawingCanvasMode() {
   const [strokeWidth, setStrokeWidth] = useState(3);
   const [fontSize, setFontSize] = useState(24);
   const [textColor, setTextColor] = useState('#000000');
+  const [fontFamily, setFontFamily] = useState('Roboto');
 
-  const [textInput, setTextInput] = useState('');
-  const [showTextInput, setShowTextInput] = useState(false);
-  const [textPos, setTextPos] = useState({ x: 0, y: 0 });
+  // Text lives as objects above the bitmap, never baked into it.
+  const [texts, setTexts] = useState<TextItem[]>([]);
+  const textsRef = useRef<TextItem[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const editorRef = useRef<HTMLDivElement | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useWatermarkFonts();
+  const canvasScale = useCanvasScale(canvasRef);
+
+  const setTextsBoth = useCallback((next: TextItem[]) => {
+    textsRef.current = next;
+    setTexts(next);
+  }, []);
+
+  // Must stay referentially stable: the editor's focus effect keys off it, and a
+  // fresh function each render would drag the caret back to the end mid-typing.
+  const registerEditor = useCallback((el: HTMLDivElement | null) => {
+    editorRef.current = el;
+  }, []);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -813,7 +852,7 @@ function DrawingCanvasMode() {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    dispatch({ type: 'push', snapshot });
+    dispatch({ type: 'push', snapshot: { pixels: snapshot, texts: [] } });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // run once on mount
 
@@ -855,8 +894,86 @@ function DrawingCanvasMode() {
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext('2d')!;
     const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    dispatch({ type: 'push', snapshot });
+    dispatch({ type: 'push', snapshot: { pixels: snapshot, texts: textsRef.current } });
   }, []);
+
+  // ── Text object handlers ────────────────────────────────────────────────────
+
+  /** Reads the open editor back into runs and closes it. Empty text is discarded. */
+  const commitEditing = useCallback(() => {
+    const el = editorRef.current;
+    const id = editingId;
+    if (!el || !id) return;
+    const runs: TextRun[] = serializeEditor(el, textColor);
+    const plain = runs.map((r) => r.text).join('').trim();
+    const prev = textsRef.current.find((i) => i.id === id);
+    const hadContent = !!prev && prev.runs.length > 0;
+    const next = plain
+      ? textsRef.current.map((i) => (i.id === id ? { ...i, runs } : i))
+      : textsRef.current.filter((i) => i.id !== id);
+    setTextsBoth(next);
+    setEditingId(null);
+    if (!plain && !hadContent) return; // opened and abandoned — not an undo step
+    dispatch({ type: 'pushTexts', texts: next });
+  }, [editingId, textColor, setTextsBoth]);
+
+  const handleTextStartEdit = useCallback((id: string) => {
+    if (editingId && editingId !== id) commitEditing();
+    setSelectedId(id);
+    setEditingId(id);
+  }, [editingId, commitEditing]);
+
+  /** Live position while dragging — no history entry until the drag ends. */
+  const handleTextMove = useCallback((id: string, x: number, y: number) => {
+    setTextsBoth(textsRef.current.map((i) => (i.id === id ? { ...i, x, y } : i)));
+  }, [setTextsBoth]);
+
+  const handleTextMoveEnd = useCallback(() => {
+    dispatch({ type: 'pushTexts', texts: textsRef.current });
+  }, []);
+
+  const handleTextDelete = useCallback((id: string) => {
+    const next = textsRef.current.filter((i) => i.id !== id);
+    setTextsBoth(next);
+    setSelectedId(null);
+    setEditingId(null);
+    dispatch({ type: 'pushTexts', texts: next });
+  }, [setTextsBoth]);
+
+  /**
+   * Patches the selected text object, e.g. when the size or family changes.
+   * `commit` is false while a slider is still being dragged — one drag would
+   * otherwise push dozens of entries and flush the 50-deep history.
+   */
+  const patchSelected = useCallback((patch: Partial<TextItem>, commit = true) => {
+    if (!selectedId) return;
+    const next = textsRef.current.map((i) => (i.id === selectedId ? { ...i, ...patch } : i));
+    setTextsBoth(next);
+    if (commit) dispatch({ type: 'pushTexts', texts: next });
+  }, [selectedId, setTextsBoth]);
+
+  /** Ends a live slider drag by recording one history entry for the whole gesture. */
+  const commitTextPatch = useCallback(() => {
+    if (!selectedId) return;
+    dispatch({ type: 'pushTexts', texts: textsRef.current });
+  }, [selectedId]);
+
+  /**
+   * Colour changes route to the open editor when there is one, so they land on
+   * the selection or on the next keystrokes. With no editor open they recolour
+   * the whole selected object.
+   */
+  const handleTextColorChange = useCallback((color: string) => {
+    setTextColor(color);
+    const el = editorRef.current;
+    if (editingId && el) { applyColorToEditor(el, color); return; }
+    if (!selectedId) return;
+    const next = textsRef.current.map((i) =>
+      i.id === selectedId ? { ...i, runs: i.runs.map((r) => ({ ...r, color })) } : i,
+    );
+    setTextsBoth(next);
+    dispatch({ type: 'pushTexts', texts: next });
+  }, [editingId, selectedId, setTextsBoth]);
 
   const handlePointerDown = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
@@ -865,9 +982,15 @@ function DrawingCanvasMode() {
     startPos.current = pos;
 
     if (tool === 'text') {
-      setTextPos(pos);
-      setShowTextInput(true);
       drawing.current = false;
+      // First click closes an open editor rather than stacking a new box on top.
+      if (editingId) { commitEditing(); setSelectedId(null); return; }
+      // A merely-selected item needs no such click to absorb: creating the new box
+      // moves the selection anyway, so blank canvas always yields text in one click.
+      const item = newTextItem(pos.x, pos.y, fontSize, fontFamily);
+      setTextsBoth([...textsRef.current, item]);
+      setSelectedId(item.id);
+      setEditingId(item.id);
       return;
     }
 
@@ -923,7 +1046,7 @@ function DrawingCanvasMode() {
       const ctx = canvas.getContext('2d')!;
       baseSnapshot.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
     }
-  }, [tool, fillColor, saveSnapshot]);
+  }, [tool, fillColor, saveSnapshot, editingId, commitEditing, fontSize, fontFamily, setTextsBoth]);
 
   const handlePointerMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
@@ -984,25 +1107,20 @@ function DrawingCanvasMode() {
     if (tool !== 'fill') saveSnapshot();
   }, [tool, saveSnapshot]);
 
-  const handleTextSubmit = useCallback(() => {
-    if (!textInput.trim()) { setShowTextInput(false); return; }
-    const canvas = canvasRef.current!;
-    const ctx = canvas.getContext('2d')!;
-    ctx.font = `${fontSize}px Arial`;
-    ctx.fillStyle = textColor;
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.fillText(textInput, textPos.x, textPos.y);
-    setShowTextInput(false);
-    setTextInput('');
-    saveSnapshot();
-  }, [textInput, textPos, fontSize, textColor, saveSnapshot]);
+  // Leaving the text tool ends any open edit, so the box can't linger over a stroke.
+  useEffect(() => {
+    if (tool !== 'text' && editingId) commitEditing();
+    if (tool !== 'text') setSelectedId(null);
+  }, [tool, editingId, commitEditing]);
 
-  // Undo/Redo
+  // Undo/Redo — restores bitmap and text objects together.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || drawState.historyIdx < 0) return;
-    const ctx = canvas.getContext('2d')!;
-    ctx.putImageData(drawState.history[drawState.historyIdx], 0, 0);
+    const snap = drawState.history[drawState.historyIdx];
+    canvas.getContext('2d')!.putImageData(snap.pixels, 0, 0);
+    textsRef.current = snap.texts;
+    setTexts(snap.texts);
   }, [drawState]);
 
   const clearCanvas = () => {
@@ -1010,6 +1128,10 @@ function DrawingCanvasMode() {
     const ctx = canvas.getContext('2d')!;
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    setEditingId(null);
+    setSelectedId(null);
+    textsRef.current = [];
+    setTexts([]);
     saveSnapshot();
   };
 
@@ -1028,19 +1150,31 @@ function DrawingCanvasMode() {
     img.src = url;
   }, [saveSnapshot]);
 
-  const downloadAs = (format: 'png' | 'jpeg') => {
+  /**
+   * Composites at 2x. The bitmap is upscaled, but the text is re-rendered from
+   * its objects at the export scale, so type comes out sharp instead of being a
+   * magnified 800px raster.
+   */
+  const EXPORT_SCALE = 2;
+  const downloadAs = async (format: 'png' | 'jpeg') => {
+    if (editingId) commitEditing();
     const canvas = canvasRef.current!;
+    const offscreen = document.createElement('canvas');
+    offscreen.width = canvas.width * EXPORT_SCALE;
+    offscreen.height = canvas.height * EXPORT_SCALE;
+    const ctx = offscreen.getContext('2d')!;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     if (format === 'jpeg') {
-      const offscreen = document.createElement('canvas');
-      offscreen.width = canvas.width;
-      offscreen.height = canvas.height;
-      const ctx = offscreen.getContext('2d')!;
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, offscreen.width, offscreen.height);
-      ctx.drawImage(canvas, 0, 0);
+    }
+    ctx.drawImage(canvas, 0, 0, offscreen.width, offscreen.height);
+    await drawTextItems(ctx, textsRef.current, EXPORT_SCALE);
+    if (format === 'jpeg') {
       offscreen.toBlob((b) => { if (b) downloadBlob(b, 'drawing.jpg'); }, 'image/jpeg', 0.92);
     } else {
-      canvas.toBlob((b) => { if (b) downloadBlob(b, 'drawing.png'); }, 'image/png');
+      offscreen.toBlob((b) => { if (b) downloadBlob(b, 'drawing.png'); }, 'image/png');
     }
   };
 
@@ -1113,15 +1247,31 @@ function DrawingCanvasMode() {
             <>
               <div className="flex items-center gap-2">
                 <label className="text-slate-500 text-xs">{t('drawTextColor')}</label>
-                <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)}
+                <input type="color" value={textColor}
+                  onChange={(e) => handleTextColorChange(e.target.value)}
                   className="w-8 h-8 bg-transparent border-0 cursor-pointer rounded" />
               </div>
               <div className="flex items-center gap-2">
+                <label className="text-slate-500 text-xs">{t('wmFont')}</label>
+                <select value={fontFamily}
+                  onChange={(e) => { setFontFamily(e.target.value); patchSelected({ fontFamily: e.target.value }); }}
+                  className="bg-slate-800 border border-slate-700 text-slate-300 text-xs rounded-lg px-2 py-1.5 cursor-pointer focus:outline-none focus:border-indigo-500"
+                  style={{ fontFamily: `"${fontFamily}", sans-serif` }}>
+                  {WATERMARK_FONTS.map(f => (
+                    <option key={f.css} value={f.css}>{f.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
                 <label className="text-slate-500 text-xs">{t('drawFontSize')}</label>
-                <input type="range" min={10} max={80} value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))}
+                <input type="range" min={10} max={80} value={fontSize}
+                  onChange={(e) => { const v = Number(e.target.value); setFontSize(v); patchSelected({ fontSize: v }, false); }}
+                  onPointerUp={commitTextPatch}
+                  onKeyUp={commitTextPatch}
                   className="w-20 accent-indigo-500 cursor-pointer" />
                 <span className="text-slate-500 text-xs">{fontSize}px</span>
               </div>
+              <p className="text-slate-600 text-xs">{t('drawTextHint')}</p>
             </>
           )}
         </div>
@@ -1131,8 +1281,8 @@ function DrawingCanvasMode() {
       <div className={`relative border border-slate-800 rounded-xl overflow-hidden bg-slate-950${isFullscreen ? ' flex-1 min-h-0' : ''}`}>
         <canvas
           ref={canvasRef}
-          width={800}
-          height={500}
+          width={CANVAS_W}
+          height={CANVAS_H}
           className={`${isFullscreen ? 'absolute inset-0 h-full' : ''} w-full block touch-none`}
           style={{ background: '#ffffff', cursor: tool === 'eraser' ? 'cell' : tool === 'text' ? 'text' : 'crosshair' }}
           onMouseDown={handlePointerDown}
@@ -1143,28 +1293,23 @@ function DrawingCanvasMode() {
           onTouchMove={handlePointerMove}
           onTouchEnd={handlePointerUp}
         />
-        {/* Text input overlay */}
-        {showTextInput && (
-          <div className="absolute inset-0 flex items-start justify-start pointer-events-none">
-            <div className="pointer-events-auto absolute" style={{
-              left: `${(textPos.x / 800) * 100}%`,
-              top: `${(textPos.y / 500) * 100}%`,
-            }}>
-              <input
-                autoFocus
-                type="text"
-                value={textInput}
-                onChange={(e) => setTextInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleTextSubmit(); if (e.key === 'Escape') { setShowTextInput(false); setTextInput(''); } }}
-                className="bg-transparent border border-dashed border-indigo-500 px-2 py-1 rounded focus:outline-none placeholder:text-slate-400 placeholder:opacity-70"
-                placeholder={t('drawTypePlaceholder')}
-                // Transparent background + the real text colour makes the overlay a true
-                // preview: what you see while typing is what fillText commits.
-                style={{ fontSize: `${fontSize}px`, lineHeight: 1, color: textColor, caretColor: textColor }}
-              />
-            </div>
-          </div>
-        )}
+        {/* Editable text objects, layered above the bitmap */}
+        <DrawingTextLayer
+          items={texts}
+          scale={canvasScale}
+          interactive={tool === 'text'}
+          editingId={editingId}
+          selectedId={selectedId}
+          fallbackColor={textColor}
+          onStartEdit={handleTextStartEdit}
+          onSelect={setSelectedId}
+          onMove={handleTextMove}
+          onMoveEnd={handleTextMoveEnd}
+          onCommit={commitEditing}
+          onDelete={handleTextDelete}
+          registerEditor={registerEditor}
+          deleteLabel={t('drawTextDelete')}
+        />
       </div>
 
       {/* Bottom actions */}
