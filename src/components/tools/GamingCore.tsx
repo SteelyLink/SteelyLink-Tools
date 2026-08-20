@@ -87,7 +87,9 @@ function CpsTest() {
       clicksRef.current++;
       setClicks(clicksRef.current);
     }
-    if (phase === 'done') { setPhase('idle'); }
+    // phase === 'done' is deliberately inert: the result stays frozen until the
+    // user presses the explicit restart button, so over-clicking past the timer
+    // can't wipe the score before it has been read.
   }, [phase, start]);
 
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
@@ -106,12 +108,12 @@ function CpsTest() {
         onPointerDown={(e) => { e.preventDefault(); handleClick(); }}
         onContextMenu={(e) => e.preventDefault()}
         style={{ touchAction: 'manipulation' }}
-        className={`relative rounded-2xl border-2 flex flex-col items-center justify-center gap-4 cursor-pointer select-none transition-all
+        className={`relative rounded-2xl border-2 flex flex-col items-center justify-center gap-4 select-none transition-all min-h-[320px] sm:min-h-[280px]
           ${phase === 'running'
-            ? 'border-indigo-500 bg-indigo-600/10 min-h-[320px] sm:min-h-[280px]'
+            ? 'border-indigo-500 bg-indigo-600/10 cursor-pointer'
             : phase === 'done'
-            ? 'border-emerald-500 bg-emerald-600/10 min-h-[320px] sm:min-h-[280px]'
-            : 'border-slate-700 hover:border-indigo-400 bg-slate-900/50 min-h-[320px] sm:min-h-[280px]'
+            ? 'border-emerald-500 bg-emerald-600/10 cursor-default'
+            : 'border-slate-700 hover:border-indigo-400 bg-slate-900/50 cursor-pointer'
           }`}
       >
         {phase === 'idle' && (
@@ -150,10 +152,19 @@ function CpsTest() {
               <p className={`text-2xl font-bold ${rating.color}`}>{rating.label}</p>
               <p className="text-slate-500 text-sm">{t('totalClicksIn', { clicks, duration })}</p>
             </div>
-            <p className="text-slate-500 text-sm">{t('clickToRestart')}</p>
+            <p className="text-emerald-400/80 text-sm">{t('cpsTestComplete')}</p>
           </>
         )}
       </div>
+      {phase === 'done' && (
+        <button
+          onClick={start}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl transition-colors"
+        >
+          <span className="material-symbols-outlined text-lg">refresh</span>
+          {t('cpsRestartTest')}
+        </button>
+      )}
       {phase === 'done' && (
         <div className="grid grid-cols-4 gap-3">
           {[

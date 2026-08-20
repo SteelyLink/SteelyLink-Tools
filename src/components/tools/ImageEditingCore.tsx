@@ -790,6 +790,7 @@ function DrawingCanvasMode() {
   const [fillColor, setFillColor] = useState('#6366f1');
   const [strokeWidth, setStrokeWidth] = useState(3);
   const [fontSize, setFontSize] = useState(24);
+  const [textColor, setTextColor] = useState('#000000');
 
   const [textInput, setTextInput] = useState('');
   const [showTextInput, setShowTextInput] = useState(false);
@@ -988,13 +989,13 @@ function DrawingCanvasMode() {
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext('2d')!;
     ctx.font = `${fontSize}px Arial`;
-    ctx.fillStyle = strokeColor;
+    ctx.fillStyle = textColor;
     ctx.globalCompositeOperation = 'source-over';
     ctx.fillText(textInput, textPos.x, textPos.y);
     setShowTextInput(false);
     setTextInput('');
     saveSnapshot();
-  }, [textInput, textPos, fontSize, strokeColor, saveSnapshot]);
+  }, [textInput, textPos, fontSize, textColor, saveSnapshot]);
 
   // Undo/Redo
   useEffect(() => {
@@ -1109,12 +1110,19 @@ function DrawingCanvasMode() {
             <span className="text-slate-500 text-xs">{strokeWidth}px</span>
           </div>
           {tool === 'text' && (
-            <div className="flex items-center gap-2">
-              <label className="text-slate-500 text-xs">{t('drawFontSize')}</label>
-              <input type="range" min={10} max={80} value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))}
-                className="w-20 accent-indigo-500 cursor-pointer" />
-              <span className="text-slate-500 text-xs">{fontSize}px</span>
-            </div>
+            <>
+              <div className="flex items-center gap-2">
+                <label className="text-slate-500 text-xs">{t('drawTextColor')}</label>
+                <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)}
+                  className="w-8 h-8 bg-transparent border-0 cursor-pointer rounded" />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-slate-500 text-xs">{t('drawFontSize')}</label>
+                <input type="range" min={10} max={80} value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))}
+                  className="w-20 accent-indigo-500 cursor-pointer" />
+                <span className="text-slate-500 text-xs">{fontSize}px</span>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -1148,9 +1156,11 @@ function DrawingCanvasMode() {
                 value={textInput}
                 onChange={(e) => setTextInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleTextSubmit(); if (e.key === 'Escape') { setShowTextInput(false); setTextInput(''); } }}
-                className="bg-white/10 border border-indigo-500 text-white px-2 py-1 text-sm rounded focus:outline-none"
+                className="bg-transparent border border-dashed border-indigo-500 px-2 py-1 rounded focus:outline-none placeholder:text-slate-400 placeholder:opacity-70"
                 placeholder={t('drawTypePlaceholder')}
-                style={{ fontSize: `${fontSize}px`, lineHeight: 1 }}
+                // Transparent background + the real text colour makes the overlay a true
+                // preview: what you see while typing is what fillText commits.
+                style={{ fontSize: `${fontSize}px`, lineHeight: 1, color: textColor, caretColor: textColor }}
               />
             </div>
           </div>
