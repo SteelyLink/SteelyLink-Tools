@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 /**
  * Editable text layer for the drawing canvas.
@@ -103,6 +103,29 @@ export function applyColorToSelection(root: HTMLElement, color: string): boolean
   const range = sel.getRangeAt(0);
   if (range.collapsed || !root.contains(range.commonAncestorContainer)) return false;
 
+  // The picker fires change continuously while it is dragged, and each pass lands
+  // on the selection the previous one left behind. When that selection is exactly
+  // one coloured span, recolour it in place — otherwise every tick would wrap it
+  // in yet another span.
+  const anchor = range.commonAncestorContainer;
+  const host = (anchor.nodeType === Node.ELEMENT_NODE ? anchor : anchor.parentNode) as HTMLElement | null;
+  if (host && host !== root && host.dataset?.c) {
+    const whole = document.createRange();
+    whole.selectNodeContents(host);
+    if (
+      range.compareBoundaryPoints(Range.START_TO_START, whole) === 0 &&
+      range.compareBoundaryPoints(Range.END_TO_END, whole) === 0
+    ) {
+      host.dataset.c = color;
+      host.style.color = color;
+      host.querySelectorAll<HTMLElement>('[data-c]').forEach((el) => {
+        el.removeAttribute('data-c');
+        el.style.removeProperty('color');
+      });
+      return true;
+    }
+  }
+
   const frag = range.extractContents();
   frag.querySelectorAll<HTMLElement>('[data-c]').forEach((el) => {
     el.removeAttribute('data-c');
@@ -131,6 +154,17 @@ export function startColorAtCaret(root: HTMLElement, color: string): void {
   if (!sel || sel.rangeCount === 0) return;
   const range = sel.getRangeAt(0);
   if (!root.contains(range.commonAncestorContainer)) return;
+
+  // Dragging through the OS colour picker fires change over and over. Recolour the
+  // span already opened here rather than nesting a fresh one on every tick.
+  const host = range.startContainer.nodeType === Node.TEXT_NODE
+    ? range.startContainer.parentElement
+    : (range.startContainer as HTMLElement);
+  if (host && host !== root && host.dataset?.c && host.textContent === ZWSP) {
+    host.dataset.c = color;
+    host.style.color = color;
+    return;
+  }
 
   const span = document.createElement('span');
   span.dataset.c = color;
@@ -267,19 +301,28 @@ function TextItemView({
     timer: ReturnType<typeof setTimeout> | null;
   } | null>(null);
 
-  // Captured once when editing opens. Keeping the string stable stops React from
-  // reconciling the DOM the browser is managing for us mid-composition.
-  const initialHtml = useMemo(
-    () => runsToHtml(item.runs),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [item.id, isEditing],
-  );
+  // Read once when editing opens (see the effect below), never during a render.
+  const fallbackColorRef = useRef(fallbackColor);
+  useEffect(() => { fallbackColorRef.current = fallbackColor; }, [fallbackColor]);
 
+  /**
+   * Seeds the editor and hands its DOM to the browser for the rest of the session.
+   *
+   * The content must NOT go through dangerouslySetInnerHTML: React 19 diffs that
+   * prop by object identity, and `{__html: …}` is a fresh literal on every render,
+   * so React re-ran setInnerHTML on every re-render. Picking a colour calls
+   * setTextColor first, which re-renders — and the editor was reset to its opening
+   * HTML, discarding text typed since and dropping the caret back to the start.
+   */
   useEffect(() => {
     if (!isEditing) return;
     const el = elRef.current;
     if (!el) return;
+    el.innerHTML = runsToHtml(item.runs);
     registerEditor(el);
+    // Tracking starts before the caret is placed, so even a colour picked without
+    // typing anything first has a saved range to come back to.
+    const stopTracking = trackSelection(el);
     el.focus();
     // Caret to the end so typing continues rather than prepends.
     const sel = window.getSelection();
@@ -288,8 +331,14 @@ function TextItemView({
     range.collapse(false);
     sel?.removeAllRanges();
     sel?.addRange(range);
-    const stopTracking = trackSelection(el);
+    // A fresh box has no span to type into, so open one at the current colour.
+    // Without it the first characters are bare text nodes that take whatever the
+    // colour picker holds at commit time — retro-colouring text already typed.
+    if (!item.runs.length) startColorAtCaret(el, fallbackColorRef.current);
     return () => { stopTracking(); registerEditor(null); };
+    // runs and the colour are deliberately read only at open: re-running this
+    // would reset the DOM out from under the caret mid-typing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditing, registerEditor]);
 
   const commit = useCallback(() => {
@@ -366,7 +415,8 @@ function TextItemView({
         ref={elRef}
         contentEditable
         suppressContentEditableWarning
-        dangerouslySetInnerHTML={{ __html: initialHtml }}
+        // No children and no dangerouslySetInnerHTML on purpose — the effect above
+        // owns this element's content. React must never touch it again.
         onKeyDown={(e) => {
           if (e.key === 'Enter') { e.preventDefault(); commit(); }
           else if (e.key === 'Escape') { e.preventDefault(); commit(); }
